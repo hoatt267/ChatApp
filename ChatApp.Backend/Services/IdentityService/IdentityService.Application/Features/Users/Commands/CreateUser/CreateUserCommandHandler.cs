@@ -27,8 +27,9 @@ namespace IdentityService.Application.Features.Users.Commands.CreateUser
                 throw new BadRequestException("Email is already in use.");
             }
 
-            // Tạo User Entity mới (Mật khẩu tạm để thô, sau này sẽ băm)
-            var user = new User(request.Email, request.Password, request.FullName, null);
+            // Use BCrypt to hash the password before saving
+            string hashedPassword = BCrypt.Net.BCrypt.HashPassword(request.Password);
+            var user = new User(request.Email, hashedPassword, request.FullName, null);
 
             await _userRepository.AddAsync(user);
 

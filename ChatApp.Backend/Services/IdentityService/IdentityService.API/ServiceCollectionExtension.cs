@@ -1,7 +1,9 @@
 using FluentValidation;
 using IdentityService.API.Middlewares;
 using IdentityService.Application.Behaviors;
+using IdentityService.Application.Interfaces;
 using IdentityService.Domain.Interfaces;
+using IdentityService.Infrastructure.Authentication;
 using IdentityService.Infrastructure.DatabaseContext;
 using IdentityService.Infrastructure.Repositories;
 using MediatR;
@@ -51,6 +53,8 @@ namespace IdentityService.API
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
             builder.Services.AddControllers();
+
+            builder.Services.AddScoped<IJwtProvider, JwtProvider>();
         }
     }
 }
