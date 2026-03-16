@@ -1,4 +1,6 @@
 using IdentityService.Application.DTOs;
+using IdentityService.Application.DTOs.Responses;
+using IdentityService.Application.Features.Auth.Commands.Login;
 using IdentityService.Application.Features.Users.Commands;
 using IdentityService.Application.Features.Users.Commands.CreateUser;
 using IdentityService.Application.Wrappers;
@@ -26,5 +28,12 @@ public class UsersController : ControllerBase
 
         // Trả về ApiResponse chuẩn
         return Ok(ApiResponse<UserResponseDto>.Ok(result, "User registered successfully."));
+    }
+
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] LoginCommand command)
+    {
+        var result = await _mediator.Send(command);
+        return Ok(ApiResponse<LoginResponseDto>.Ok(result, "Login successful."));
     }
 }
