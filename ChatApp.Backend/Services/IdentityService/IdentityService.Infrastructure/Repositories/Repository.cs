@@ -181,15 +181,15 @@ namespace IdentityService.Infrastructure.Repositories
 
         public async Task SaveChangesAsync()
         {
-            try
-            {
-                await _dbContext.SaveChangesAsync().ConfigureAwait(false);
-            }
-            catch (DbUpdateConcurrencyException ex)
-            {
-                throw new DbUpdateException(
-                    ex.Entries.FirstOrDefault()?.GetType().Name ?? string.Empty);
-            }
+            // try
+            // {
+            await _dbContext.SaveChangesAsync().ConfigureAwait(false);
+            // }
+            // catch (DbUpdateConcurrencyException ex)
+            // {
+            //     throw new DbUpdateException(
+            //         ex.Entries.FirstOrDefault()?.GetType().Name ?? string.Empty);
+            // }
         }
 
         public async Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate)

@@ -1,9 +1,11 @@
 using IdentityService.Application.DTOs;
 using IdentityService.Application.DTOs.Responses;
 using IdentityService.Application.Features.Auth.Commands.Login;
+using IdentityService.Application.Features.Auth.Commands.RefreshToken;
 using IdentityService.Application.Features.Users.Commands;
 using IdentityService.Application.Features.Users.Commands.CreateUser;
 using IdentityService.Application.Wrappers;
+using IdentityService.Domain.Exceptions;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -34,6 +36,37 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> Login([FromBody] LoginCommand command)
     {
         var result = await _mediator.Send(command);
+        SetRefreshTokenCookie(result.RefreshToken);
         return Ok(ApiResponse<LoginResponseDto>.Ok(result, "Login successful."));
+    }
+
+    [HttpPost("refresh-token")]
+    public async Task<IActionResult> RefreshToken()
+    {
+        // Lấy Token từ két sắt Cookie do trình duyệt (hoặc Postman) gửi lên
+        var refreshToken = Request.Cookies["refreshToken"];
+
+        if (string.IsNullOrEmpty(refreshToken))
+            throw new BadRequestException("Refresh token is required.");
+
+        var command = new RefreshTokenCommand { Token = refreshToken };
+        var result = await _mediator.Send(command);
+
+        // Đổi két sắt mới chứa Token mới
+        SetRefreshTokenCookie(result.RefreshToken);
+
+        return Ok(ApiResponse<LoginResponseDto>.Ok(result, "Token refreshed successfully."));
+    }
+
+    private void SetRefreshTokenCookie(string token)
+    {
+        var cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Expires = DateTime.UtcNow.AddDays(7),
+            Secure = true,   // Chỉ gửi qua HTTPS
+            SameSite = SameSiteMode.Strict
+        };
+        Response.Cookies.Append("refreshToken", token, cookieOptions);
     }
 }
