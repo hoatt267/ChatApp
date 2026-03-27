@@ -29,6 +29,8 @@ namespace IdentityService.Application.Features.Auth.Commands.RefreshToken
             var refreshToken = await _refreshTokenRepository.GetAsync<Domain.Entities.RefreshToken>(
                 predicate: rt => rt.Token == request.Token,
                 include: q => q.Include(r => r.User)
+                                .ThenInclude(u => u.UserRoles)
+                                .ThenInclude(ur => ur.Role)
             );
 
             if (refreshToken == null || refreshToken.IsRevoked || refreshToken.ExpiresAt < DateTime.UtcNow)

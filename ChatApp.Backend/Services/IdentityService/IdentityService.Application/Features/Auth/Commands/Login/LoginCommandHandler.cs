@@ -6,6 +6,7 @@ using IdentityService.Domain.Entities;
 using IdentityService.Domain.Exceptions;
 using IdentityService.Domain.Interfaces;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace IdentityService.Application.Features.Auth.Commands.Login
 {
@@ -29,6 +30,7 @@ namespace IdentityService.Application.Features.Auth.Commands.Login
             // Tìm user theo email
             var user = await _userRepository.GetAsync<User>(
                 predicate: u => u.Email == request.Email,
+                include: q => q.Include(u => u.UserRoles).ThenInclude(ur => ur.Role),
                 disableTracking: true
             );
 

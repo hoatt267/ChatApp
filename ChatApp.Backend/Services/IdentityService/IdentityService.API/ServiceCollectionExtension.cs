@@ -1,3 +1,4 @@
+using System.Text;
 using FluentValidation;
 using IdentityService.API.Middlewares;
 using IdentityService.Application.Behaviors;
@@ -7,7 +8,9 @@ using IdentityService.Infrastructure.Authentication;
 using IdentityService.Infrastructure.DatabaseContext;
 using IdentityService.Infrastructure.Repositories;
 using MediatR;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 namespace IdentityService.API
 {
@@ -43,6 +46,31 @@ namespace IdentityService.API
                 cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
             });
 
+            //Register JWT
+            var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+            var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey is missing");
+
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = jwtSettings["Issuer"],
+                    ValidAudience = jwtSettings["Audience"],
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+                    ClockSkew = TimeSpan.Zero // Bỏ độ trễ 5 phút mặc định của .NET
+                };
+            });
+            builder.Services.AddAuthorization();
+
             // 4. Đăng ký FluentValidation
             builder.Services.AddValidatorsFromAssembly(applicationAssembly);
 
@@ -55,6 +83,21 @@ namespace IdentityService.API
             builder.Services.AddControllers();
 
             builder.Services.AddScoped<IJwtProvider, JwtProvider>();
+
+            // Cấu hình CORS mở cửa cho Frontend
+            var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("CorsPolicy", policy =>
+                {
+                    policy.WithOrigins(allowedOrigins)
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials();
+                });
+            });
+
+            builder.Services.AddHealthChecks();
         }
     }
 }
