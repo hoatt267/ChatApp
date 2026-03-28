@@ -1,4 +1,4 @@
-namespace IdentityService.Domain.Wrappers;
+namespace ChatApp.Shared.Wrappers;
 
 public class PaginatedList<T>
 {

@@ -1,17 +1,16 @@
 using System.Linq.Expressions;
-using IdentityService.Domain.Interfaces;
-using IdentityService.Domain.Wrappers;
-using IdentityService.Infrastructure.DatabaseContext;
+using ChatApp.Shared.Interfaces;
+using ChatApp.Shared.Wrappers;
 using Microsoft.EntityFrameworkCore;
 
-namespace IdentityService.Infrastructure.Repositories
+namespace ChatApp.Shared.Repositories
 {
     public class Repository<T> : IRepository<T> where T : class
     {
-        private readonly IdentityDbContext _dbContext;
+        private readonly DbContext _dbContext;
         private readonly DbSet<T> _dbSet;
 
-        public Repository(IdentityDbContext dbContext)
+        public Repository(DbContext dbContext)
         {
             _dbContext = dbContext;
             _dbSet = dbContext.Set<T>();

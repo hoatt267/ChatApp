@@ -1,4 +1,4 @@
-using IdentityService.Domain.Interfaces;
+using ChatApp.Shared.Interfaces;
 using MediatR;
 
 namespace IdentityService.Application.Features.Auth.Commands.Logout

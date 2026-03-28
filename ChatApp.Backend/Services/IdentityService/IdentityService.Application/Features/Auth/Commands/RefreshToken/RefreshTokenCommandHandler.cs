@@ -2,8 +2,8 @@ using AutoMapper;
 using IdentityService.Application.DTOs;
 using IdentityService.Application.DTOs.Responses;
 using IdentityService.Application.Interfaces;
-using IdentityService.Domain.Exceptions;
-using IdentityService.Domain.Interfaces;
+using ChatApp.Shared.Exceptions;
+using ChatApp.Shared.Interfaces;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 

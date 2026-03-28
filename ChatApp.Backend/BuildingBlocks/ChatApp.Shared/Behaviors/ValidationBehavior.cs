@@ -1,8 +1,8 @@
 using FluentValidation;
-using IdentityService.Domain.Exceptions;
+using ChatApp.Shared.Exceptions;
 using MediatR;
 
-namespace IdentityService.Application.Behaviors
+namespace ChatApp.Shared.Behaviors
 {
     public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse> where TRequest : notnull
     {

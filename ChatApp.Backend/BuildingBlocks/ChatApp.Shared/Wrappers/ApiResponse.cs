@@ -1,4 +1,4 @@
-namespace IdentityService.Application.Wrappers
+namespace ChatApp.Shared.Wrappers
 {
     public class ApiResponse<T>
     {
