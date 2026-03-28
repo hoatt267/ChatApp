@@ -1,0 +1,33 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Identity API",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build-identity",
+            "program": "${workspaceFolder}/ChatApp.Backend/Services/IdentityService/IdentityService.API/bin/Debug/net10.0/IdentityService.API.dll",
+            "cwd": "${workspaceFolder}/ChatApp.Backend/Services/IdentityService/IdentityService.API",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            }
+        },
+        {
+            "name": "API Gateway",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build-gateway",
+            "program": "${workspaceFolder}/ChatApp.Backend/ApiGateway/bin/Debug/net10.0/ApiGateway.dll",
+            "cwd": "${workspaceFolder}/ChatApp.Backend/ApiGateway",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            }
+        }
+    ],
+    "compounds": [
+        {
+            "name": "🚀 RUN ALL SERVICES",
+            "configurations": ["Identity API", "API Gateway"]
+        }
+    ]
+}
