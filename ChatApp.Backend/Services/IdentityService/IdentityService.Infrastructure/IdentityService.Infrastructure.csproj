@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\IdentityService.Application\IdentityService.Application.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\ChatApp.Shared\ChatApp.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,7 +1,7 @@
 using System.Linq.Expressions;
-using IdentityService.Domain.Wrappers;
+using ChatApp.Shared.Wrappers;
 
-namespace IdentityService.Domain.Interfaces
+namespace ChatApp.Shared.Interfaces
 {
     public interface IRepository<T> where T : class
     {

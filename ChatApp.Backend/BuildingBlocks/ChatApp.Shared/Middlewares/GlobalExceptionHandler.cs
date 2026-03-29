@@ -1,9 +1,10 @@
 using System.ComponentModel.DataAnnotations;
-using IdentityService.Application.Wrappers;
-using IdentityService.Domain.Exceptions;
+using ChatApp.Shared.Wrappers;
+using ChatApp.Shared.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Http;
 
-namespace IdentityService.API.Middlewares
+namespace ChatApp.Shared.Middlewares
 {
     public class GlobalExceptionHandler : IExceptionHandler
     {

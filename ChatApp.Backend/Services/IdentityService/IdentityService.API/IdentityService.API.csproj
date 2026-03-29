@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\IdentityService.Application\IdentityService.Application.csproj" />
     <ProjectReference Include="..\IdentityService.Infrastructure\IdentityService.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\ChatApp.Shared\ChatApp.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>

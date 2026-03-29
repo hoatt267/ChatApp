@@ -1,12 +1,12 @@
 using System.Text;
+using ChatApp.Shared.Interfaces;
+using ChatApp.Shared.Repositories;
 using FluentValidation;
-using IdentityService.API.Middlewares;
-using IdentityService.Application.Behaviors;
+using ChatApp.Shared.Middlewares;
+using ChatApp.Shared.Behaviors;
 using IdentityService.Application.Interfaces;
-using IdentityService.Domain.Interfaces;
 using IdentityService.Infrastructure.Authentication;
 using IdentityService.Infrastructure.DatabaseContext;
-using IdentityService.Infrastructure.Repositories;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -26,6 +26,9 @@ namespace IdentityService.API
             // Setup Database
             builder.Services.AddDbContextPool<IdentityDbContext>(options =>
                 options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+            // Đăng ký DbContext để có thể inject vào Repository
+            builder.Services.AddScoped<DbContext>(provider => provider.GetRequiredService<IdentityDbContext>());
 
             // Register generic repository for application handlers.
             builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
@@ -83,19 +86,6 @@ namespace IdentityService.API
             builder.Services.AddControllers();
 
             builder.Services.AddScoped<IJwtProvider, JwtProvider>();
-
-            // Cấu hình CORS mở cửa cho Frontend
-            var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
-            builder.Services.AddCors(options =>
-            {
-                options.AddPolicy("CorsPolicy", policy =>
-                {
-                    policy.WithOrigins(allowedOrigins)
-                        .AllowAnyHeader()
-                        .AllowAnyMethod()
-                        .AllowCredentials();
-                });
-            });
 
             builder.Services.AddHealthChecks();
         }

@@ -2,9 +2,9 @@ using AutoMapper;
 using IdentityService.Application.DTOs;
 using IdentityService.Domain.Entities;
 using IdentityService.Domain.Enums;
-using IdentityService.Domain.Exceptions;
-using IdentityService.Domain.Interfaces;
+using ChatApp.Shared.Exceptions;
 using MediatR;
+using ChatApp.Shared.Interfaces;
 
 namespace IdentityService.Application.Features.Users.Commands.CreateUser
 {

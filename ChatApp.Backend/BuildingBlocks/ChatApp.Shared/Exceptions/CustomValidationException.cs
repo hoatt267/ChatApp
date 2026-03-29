@@ -1,4 +1,4 @@
-namespace IdentityService.Domain.Exceptions
+namespace ChatApp.Shared.Exceptions
 {
     public class CustomValidationException : Exception
     {

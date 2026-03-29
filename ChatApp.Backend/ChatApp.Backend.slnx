@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/BuildingBlocks/">
+    <Project Path="BuildingBlocks/ChatApp.Shared/ChatApp.Shared.csproj" />
+  </Folder>
   <Folder Name="/Services/" />
   <Folder Name="/Services/IdentityService/">
     <Project Path="Services/IdentityService/IdentityService.API/IdentityService.API.csproj" />
