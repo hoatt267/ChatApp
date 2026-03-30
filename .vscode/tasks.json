@@ -12,6 +12,16 @@
             "problemMatcher": "$msCompile"
         },
         {
+            "label": "build-chat",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/ChatApp.Backend/Services/ChatService/ChatService.API/ChatService.API.csproj"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
             "label": "build-gateway",
             "command": "dotnet",
             "type": "process",
@@ -20,6 +30,6 @@
                 "${workspaceFolder}/ChatApp.Backend/ApiGateway/ApiGateway.csproj"
             ],
             "problemMatcher": "$msCompile"
-        }
+        },
     ]
 }

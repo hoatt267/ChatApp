@@ -1,0 +1,83 @@
+<!doctype html>
+<html>
+  <head>
+    <title>ChatApp SignalR Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+  </head>
+  <body style="font-family: Arial; padding: 20px">
+    <h2>Test SignalR Chat</h2>
+
+    <label>Access Token:</label><br />
+    <textarea
+      id="tokenInput"
+      rows="3"
+      cols="80"
+      placeholder="Paste Access Token vào đây..."
+    ></textarea
+    ><br /><br />
+
+    <button onclick="connect()">1. Kết nối SignalR</button>
+    <button onclick="joinRoom()">2. Join Phòng Chat</button><br /><br />
+
+    <label>Tin nhắn:</label><br />
+    <input
+      type="text"
+      id="messageInput"
+      size="50"
+      placeholder="Nhập tin nhắn..."
+    />
+    <button onclick="sendMessage()">3. Gửi tin nhắn</button>
+
+    <hr />
+    <h3>Log tin nhắn Real-time:</h3>
+    <ul id="messagesList"></ul>
+
+    <script>
+      let connection = null;
+      const CONVERSATION_ID = "11111111-1111-1111-1111-111111111111";
+
+      async function connect() {
+        const token = document.getElementById("tokenInput").value;
+        // Trỏ đến API Gateway (Port 5000)
+        connection = new signalR.HubConnectionBuilder()
+          .withUrl(`http://localhost:5000/chatHub?access_token=${token}`)
+          .withAutomaticReconnect()
+          .build();
+
+        // Lắng nghe sự kiện "ReceiveMessage" từ ChatHub.cs bắn về
+        connection.on("ReceiveMessage", (apiResponse) => {
+          const li = document.createElement("li");
+          // apiResponse chính là cái Wrapper chuẩn của bạn!
+          li.textContent = `[Nhận lúc ${new Date().toLocaleTimeString()}] User ${apiResponse.data.senderId} nói: ${apiResponse.data.content}`;
+          li.style.color = "blue";
+          document.getElementById("messagesList").appendChild(li);
+        });
+
+        try {
+          await connection.start();
+          alert("✅ KẾT NỐI THÀNH CÔNG!");
+        } catch (err) {
+          console.error(err);
+          alert("❌ Kết nối thất bại, check console (F12)");
+        }
+      }
+
+      async function joinRoom() {
+        if (connection) {
+          // Gọi hàm JoinConversation trong ChatHub.cs
+          await connection.invoke("JoinConversation", CONVERSATION_ID);
+          alert(`Đã join phòng: ${CONVERSATION_ID}`);
+        }
+      }
+
+      async function sendMessage() {
+        const content = document.getElementById("messageInput").value;
+        if (connection) {
+          // Gọi hàm SendMessage trong ChatHub.cs
+          await connection.invoke("SendMessage", CONVERSATION_ID, content);
+          document.getElementById("messageInput").value = ""; // clear input
+        }
+      }
+    </script>
+  </body>
+</html>
