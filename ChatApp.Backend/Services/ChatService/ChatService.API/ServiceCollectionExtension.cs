@@ -1,11 +1,17 @@
 using ChatApp.Shared.Interfaces;
 using ChatApp.Shared.Repositories;
 using ChatService.Application.Features.Chats.Commands;
+using ChatService.Application.Interfaces;
 using ChatService.Application.Mappings;
 using ChatService.Infrastructure.DatabaseContext;
+using ChatService.Infrastructure.Repositories;
+using ChatService.Infrastructure.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Serializers;
 
 namespace ChatService.API
 {
@@ -18,6 +24,9 @@ namespace ChatService.API
 
         private static void RegisterInfrastructure(WebApplicationBuilder builder)
         {
+            // Đăng ký MongoDB Serializer cho Guid để lưu trữ dưới dạng chuẩn
+            BsonSerializer.RegisterSerializer(new GuidSerializer(GuidRepresentation.Standard));
+
             // Setup Database PostgreSQL cho Chat Service
             builder.Services.AddDbContextPool<ChatDbContext>(options =>
                 options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -79,6 +88,12 @@ namespace ChatService.API
 
             // Đăng ký MediatR (quét command trong tầng Application)
             builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(SendMessageCommand).Assembly));
+
+            // 1. Đăng ký MongoDB Settings
+            builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("MongoDbSettings"));
+
+            // 2. Đăng ký Message Repository dùng cho MongoDB
+            builder.Services.AddScoped<IMessageRepository, MessageRepository>();
         }
     }
 }

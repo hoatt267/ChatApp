@@ -9,7 +9,6 @@ namespace ChatService.Infrastructure.DatabaseContext
         public ChatDbContext(DbContextOptions<ChatDbContext> options) : base(options) { }
 
         public DbSet<Conversation> Conversations { get; set; } = null!;
-        public DbSet<Message> Messages { get; set; } = null!;
         public DbSet<Participant> Participants { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
