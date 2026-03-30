@@ -13,6 +13,17 @@
             }
         },
         {
+            "name": "Chat API",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build-chat",
+            "program": "${workspaceFolder}/ChatApp.Backend/Services/ChatService/ChatService.API/bin/Debug/net10.0/ChatService.API.dll",
+            "cwd": "${workspaceFolder}/ChatApp.Backend/Services/ChatService/ChatService.API",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            }
+        },
+        {
             "name": "API Gateway",
             "type": "coreclr",
             "request": "launch",
@@ -27,7 +38,7 @@
     "compounds": [
         {
             "name": "🚀 RUN ALL SERVICES",
-            "configurations": ["Identity API", "API Gateway"]
+            "configurations": ["Identity API", "Chat API", "API Gateway"]
         }
     ]
 }
