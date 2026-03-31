@@ -23,10 +23,18 @@ namespace ChatService.Infrastructure.Repositories
             await _messagesCollection.InsertOneAsync(message);
         }
 
-        public async Task<List<Message>> GetMessagesByConversationIdAsync(Guid conversationId, int limit = 50)
+        public async Task<List<Message>> GetMessagesByConversationIdAsync(Guid conversationId, int limit = 50, DateTime? before = null)
         {
             // Lấy tin nhắn theo phòng và sắp xếp mới nhất lên đầu
-            return await _messagesCollection.Find(x => x.ConversationId == conversationId)
+            var filterBuilder = Builders<Message>.Filter;
+            var filter = filterBuilder.Eq(x => x.ConversationId, conversationId);
+
+            if (before.HasValue)
+            {
+                filter &= filterBuilder.Lt(x => x.CreatedAt, before.Value);
+            }
+
+            return await _messagesCollection.Find(filter)
                 .SortByDescending(x => x.CreatedAt)
                 .Limit(limit)
                 .ToListAsync();

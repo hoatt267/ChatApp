@@ -8,6 +8,6 @@ namespace ChatService.Application.Interfaces
         Task AddAsync(Message message);
 
         // Lấy lịch sử chat của 1 phòng (sắp xếp theo thời gian)
-        Task<List<Message>> GetMessagesByConversationIdAsync(Guid conversationId, int limit = 50);
+        Task<List<Message>> GetMessagesByConversationIdAsync(Guid conversationId, int limit = 50, DateTime? before = null);
     }
 }
