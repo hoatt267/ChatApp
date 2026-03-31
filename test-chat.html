@@ -1,11 +1,50 @@
 <!doctype html>
 <html>
   <head>
-    <title>ChatApp SignalR Test</title>
+    <title>ChatApp SignalR Test (Cursor Pagination)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <style>
+      body {
+        font-family: Arial;
+        padding: 20px;
+      }
+      #chatBox {
+        border: 1px solid #ccc;
+        padding: 10px;
+        width: 600px;
+        max-height: 400px;
+        overflow-y: auto;
+        background: #f9f9f9;
+      }
+      .msg {
+        margin: 5px 0;
+        padding: 5px;
+        border-bottom: 1px dashed #eee;
+      }
+      .history {
+        color: gray;
+      }
+      .realtime {
+        color: blue;
+        font-weight: bold;
+      }
+      .time {
+        font-size: 0.8em;
+        color: #888;
+      }
+      #loadMoreBtn {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        display: none;
+        background: #e0e0e0;
+        border: none;
+      }
+    </style>
   </head>
-  <body style="font-family: Arial; padding: 20px">
-    <h2>Test SignalR Chat</h2>
+  <body>
+    <h2>Test SignalR & Lịch sử (Cursor Pagination)</h2>
 
     <label>Access Token:</label><br />
     <textarea
@@ -29,28 +68,44 @@
     <button onclick="sendMessage()">3. Gửi tin nhắn</button>
 
     <hr />
-    <h3>Log tin nhắn Real-time:</h3>
-    <ul id="messagesList"></ul>
+    <h3>Khung Chat:</h3>
+    <div id="chatBox">
+      <button id="loadMoreBtn" onclick="loadMore()">
+        Lấy thêm tin nhắn cũ ⬆️
+      </button>
+      <div id="messagesList"></div>
+    </div>
 
     <script>
       let connection = null;
       const CONVERSATION_ID = "11111111-1111-1111-1111-111111111111";
 
+      // VŨ KHÍ BÍ MẬT: Lưu lại thời gian của tin nhắn cũ nhất
+      let oldestMessageTimestamp = null;
+
       async function connect() {
         const token = document.getElementById("tokenInput").value;
-        // Trỏ đến API Gateway (Port 5000)
         connection = new signalR.HubConnectionBuilder()
           .withUrl(`http://localhost:5000/chatHub?access_token=${token}`)
           .withAutomaticReconnect()
           .build();
 
-        // Lắng nghe sự kiện "ReceiveMessage" từ ChatHub.cs bắn về
         connection.on("ReceiveMessage", (apiResponse) => {
-          const li = document.createElement("li");
-          // apiResponse chính là cái Wrapper chuẩn của bạn!
-          li.textContent = `[Nhận lúc ${new Date().toLocaleTimeString()}] User ${apiResponse.data.senderId} nói: ${apiResponse.data.content}`;
-          li.style.color = "blue";
-          document.getElementById("messagesList").appendChild(li);
+          const list = document.getElementById("messagesList");
+          const div = document.createElement("div");
+          div.className = "msg realtime";
+
+          const timeStr = new Date(
+            apiResponse.data.createdAt,
+          ).toLocaleTimeString();
+          div.innerHTML = `[MỚI] User ${apiResponse.data.senderId.substring(0, 5)}...: ${apiResponse.data.content} <span class="time">(${timeStr})</span>`;
+
+          // Tin nhắn mới (Real-time) thì nhét vào CUỐI danh sách
+          list.appendChild(div);
+
+          // Tự động cuộn xuống đáy
+          const chatBox = document.getElementById("chatBox");
+          chatBox.scrollTop = chatBox.scrollHeight;
         });
 
         try {
@@ -64,19 +119,93 @@
 
       async function joinRoom() {
         if (connection) {
-          // Gọi hàm JoinConversation trong ChatHub.cs
           await connection.invoke("JoinConversation", CONVERSATION_ID);
           alert(`Đã join phòng: ${CONVERSATION_ID}`);
+
+          // Gọi API lấy lịch sử lần đầu tiên
+          await fetchHistory(false);
         }
       }
 
       async function sendMessage() {
         const content = document.getElementById("messageInput").value;
-        if (connection) {
-          // Gọi hàm SendMessage trong ChatHub.cs
+        if (connection && content) {
           await connection.invoke("SendMessage", CONVERSATION_ID, content);
-          document.getElementById("messageInput").value = ""; // clear input
+          document.getElementById("messageInput").value = "";
         }
+      }
+
+      // HÀM LẤY LỊCH SỬ (HỖ TRỢ CURSOR)
+      async function fetchHistory(isLoadMore = false) {
+        const token = document.getElementById("tokenInput").value;
+
+        // Ép limit=5 để dễ test phân trang
+        let url = `http://localhost:5000/api/conversations/${CONVERSATION_ID}/messages?limit=5`;
+
+        // Nếu là thao tác "Load More" và đã có mốc thời gian cũ nhất
+        if (isLoadMore && oldestMessageTimestamp) {
+          url += `&before=${encodeURIComponent(oldestMessageTimestamp)}`;
+        }
+
+        try {
+          const response = await fetch(url, {
+            method: "GET",
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          const apiResponse = await response.json();
+
+          if (apiResponse.success && apiResponse.data.length > 0) {
+            const list = document.getElementById("messagesList");
+
+            if (!isLoadMore) {
+              list.innerHTML = ""; // Xóa trắng nếu là lần đầu load
+            }
+
+            // Backend trả về mảng đã Reverse: [cũ nhất, ..., mới nhất]
+            // Do đó, data[0] luôn là tin nhắn CŨ NHẤT của đợt kéo này
+            oldestMessageTimestamp = apiResponse.data[0].createdAt;
+
+            // Tạo một khung tạm chứa các tin nhắn vừa kéo về
+            const tempFragment = document.createDocumentFragment();
+            apiResponse.data.forEach((msg) => {
+              const div = document.createElement("div");
+              div.className = "msg history";
+              const timeStr = new Date(msg.createdAt).toLocaleTimeString();
+              div.innerHTML = `[Lịch sử] User ${msg.senderId.substring(0, 5)}...: ${msg.content} <span class="time">(${timeStr})</span>`;
+              tempFragment.appendChild(div);
+            });
+
+            if (isLoadMore) {
+              // Nếu là lấy lịch sử cũ, phải nhét lên TRÊN CÙNG của danh sách
+              list.prepend(tempFragment);
+            } else {
+              // Nếu là lần đầu, nhét bình thường
+              list.appendChild(tempFragment);
+              // Hiện nút Load More lên
+              document.getElementById("loadMoreBtn").style.display = "block";
+
+              // Cuộn xuống đáy lần đầu
+              const chatBox = document.getElementById("chatBox");
+              chatBox.scrollTop = chatBox.scrollHeight;
+            }
+
+            // Nếu API trả về ít hơn 5 tin, nghĩa là đã chạm đáy DB, ẩn nút Load More đi
+            if (apiResponse.data.length < 5) {
+              document.getElementById("loadMoreBtn").style.display = "none";
+            }
+          } else if (apiResponse.success && apiResponse.data.length === 0) {
+            alert("Đã hết tin nhắn cũ!");
+            document.getElementById("loadMoreBtn").style.display = "none";
+          }
+        } catch (err) {
+          console.error("Lỗi lấy lịch sử:", err);
+        }
+      }
+
+      async function loadMore() {
+        // Gọi hàm lấy lịch sử với cờ true (là Load More)
+        await fetchHistory(true);
       }
     </script>
   </body>

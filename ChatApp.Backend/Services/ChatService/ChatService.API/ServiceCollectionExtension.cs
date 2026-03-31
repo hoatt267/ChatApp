@@ -6,6 +6,7 @@ using ChatService.Application.Mappings;
 using ChatService.Infrastructure.DatabaseContext;
 using ChatService.Infrastructure.Repositories;
 using ChatService.Infrastructure.Settings;
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -88,6 +89,9 @@ namespace ChatService.API
 
             // Đăng ký MediatR (quét command trong tầng Application)
             builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(SendMessageCommand).Assembly));
+
+            // Đăng ký fluent validation (quét validator trong tầng Application)
+            builder.Services.AddValidatorsFromAssembly(typeof(SendMessageCommand).Assembly);
 
             // 1. Đăng ký MongoDB Settings
             builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("MongoDbSettings"));
