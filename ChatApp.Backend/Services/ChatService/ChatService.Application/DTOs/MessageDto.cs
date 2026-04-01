@@ -5,6 +5,7 @@ namespace ChatService.Application.DTOs
         Guid SenderId,
         Guid ConversationId,
         string Content,
-        DateTime CreatedAt
+        DateTime CreatedAt,
+        IEnumerable<Guid> ReadBy
     );
 }

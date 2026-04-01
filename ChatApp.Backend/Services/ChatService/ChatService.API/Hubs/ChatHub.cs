@@ -2,6 +2,7 @@ using ChatApp.Shared.Exceptions;
 using ChatApp.Shared.Wrappers;
 using ChatService.Application.DTOs;
 using ChatService.Application.Features.Chats.Commands;
+using ChatService.Application.Features.Chats.Commands.MarkAsRead;
 using ChatService.Application.Interfaces;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -93,5 +94,29 @@ public class ChatHub : Hub
     public async Task JoinConversation(Guid conversationId)
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, conversationId.ToString());
+    }
+
+    public async Task NotifyTyping(Guid conversationId, bool isTyping)
+    {
+        var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userId == null) return;
+
+        // Bắn sự kiện "UserTyping" đến tất cả những người khác TRONG CÙNG PHÒNG CHAT
+        await Clients.OthersInGroup(conversationId.ToString())
+                     .SendAsync("UserTyping", conversationId, userId, isTyping);
+    }
+
+    public async Task MarkAsRead(Guid conversationId)
+    {
+        var userIdString = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!Guid.TryParse(userIdString, out var userId)) return;
+
+        // 1. Gửi Command xuống MongoDB để lưu trạng thái
+        var command = new MarkMessagesAsReadCommand(conversationId, userId);
+        await _mediator.Send(command);
+
+        // 2. Bắn loa thông báo cho những người khác TRONG CÙNG PHÒNG biết là anh này vừa xem tin nhắn
+        await Clients.OthersInGroup(conversationId.ToString())
+                     .SendAsync("UserHasReadMessages", conversationId, userId);
     }
 }
