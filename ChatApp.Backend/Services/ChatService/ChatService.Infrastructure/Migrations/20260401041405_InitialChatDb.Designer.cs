@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ChatService.Infrastructure.Migrations
 {
     [DbContext(typeof(ChatDbContext))]
-    [Migration("20260330094900_DropMessagesTable")]
-    partial class DropMessagesTable
+    [Migration("20260401041405_InitialChatDb")]
+    partial class InitialChatDb
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -51,41 +51,6 @@ namespace ChatService.Infrastructure.Migrations
                     b.ToTable("Conversations", (string)null);
                 });
 
-            modelBuilder.Entity("ChatService.Domain.Entities.Message", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("ConversationId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsRead")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid>("SenderId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ConversationId");
-
-                    b.ToTable("Message");
-                });
-
             modelBuilder.Entity("ChatService.Domain.Entities.Participant", b =>
                 {
                     b.Property<Guid>("Id")
@@ -114,17 +79,6 @@ namespace ChatService.Infrastructure.Migrations
                     b.ToTable("Participants", (string)null);
                 });
 
-            modelBuilder.Entity("ChatService.Domain.Entities.Message", b =>
-                {
-                    b.HasOne("ChatService.Domain.Entities.Conversation", "Conversation")
-                        .WithMany("Messages")
-                        .HasForeignKey("ConversationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Conversation");
-                });
-
             modelBuilder.Entity("ChatService.Domain.Entities.Participant", b =>
                 {
                     b.HasOne("ChatService.Domain.Entities.Conversation", "Conversation")
@@ -138,8 +92,6 @@ namespace ChatService.Infrastructure.Migrations
 
             modelBuilder.Entity("ChatService.Domain.Entities.Conversation", b =>
                 {
-                    b.Navigation("Messages");
-
                     b.Navigation("Participants");
                 });
 #pragma warning restore 612, 618

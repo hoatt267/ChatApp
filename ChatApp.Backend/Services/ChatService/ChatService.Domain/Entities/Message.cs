@@ -17,9 +17,6 @@ namespace ChatService.Domain.Entities
         public string Content { get; private set; } = string.Empty;
         public bool IsRead { get; private set; } = false;
 
-        // Navigation properties
-        public Conversation Conversation { get; private set; } = null!;
-
         // Behaviors
         public void MarkAsRead()
         {
