@@ -4,6 +4,7 @@ using ChatService.Application.Features.Chats.Commands;
 using ChatService.Application.Interfaces;
 using ChatService.Application.Mappings;
 using ChatService.Infrastructure.DatabaseContext;
+using ChatService.Infrastructure.Presence;
 using ChatService.Infrastructure.Repositories;
 using ChatService.Infrastructure.Settings;
 using FluentValidation;
@@ -13,6 +14,7 @@ using Microsoft.IdentityModel.Tokens;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
+using StackExchange.Redis;
 
 namespace ChatService.API
 {
@@ -33,7 +35,22 @@ namespace ChatService.API
                 options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
             // Register SignalR
-            builder.Services.AddSignalR();
+            var redisConnectionString = builder.Configuration.GetConnectionString("RedisConnection") ?? "localhost:6379";
+
+            // 1. Đăng ký kết nối Redis (Singleton)
+            builder.Services.AddSingleton<IConnectionMultiplexer>(c =>
+                ConnectionMultiplexer.Connect(redisConnectionString));
+
+            // 2. Đăng ký PresenceTracker map với Interface (Singleton)
+            builder.Services.AddSingleton<IPresenceTracker, PresenceTracker>();
+
+            // 3. Đăng ký SignalR kèm Redis Backplane
+            builder.Services.AddSignalR()
+                .AddStackExchangeRedis(redisConnectionString, options =>
+                {
+                    options.Configuration.ChannelPrefix = "ChatApp"; // Đặt tên prefix để không đụng hàng với app khác trong cùng Redis
+                });
+            // ==========================================
 
             // Register Authentication (JWT)
             var jwtSettings = builder.Configuration.GetSection("JwtSettings");
