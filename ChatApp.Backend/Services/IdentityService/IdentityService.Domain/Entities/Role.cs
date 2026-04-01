@@ -1,3 +1,4 @@
+using ChatApp.Shared.Domain;
 using IdentityService.Domain.Enums;
 
 namespace IdentityService.Domain.Entities

@@ -1,3 +1,5 @@
+using ChatApp.Shared.Domain;
+
 namespace IdentityService.Domain.Entities
 {
     public class User : BaseEntity
