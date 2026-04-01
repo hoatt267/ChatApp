@@ -17,7 +17,6 @@ namespace ChatService.Domain.Entities
 
         // Navigation properties
         public ICollection<Participant> Participants { get; private set; } = new List<Participant>();
-        public ICollection<Message> Messages { get; private set; } = new List<Message>();
 
         // Behaviors
         public void UpdateTitle(string? title)
