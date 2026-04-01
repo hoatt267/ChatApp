@@ -2,6 +2,7 @@ using ChatApp.Shared.Exceptions;
 using ChatApp.Shared.Wrappers;
 using ChatService.Application.DTOs;
 using ChatService.Application.Features.Chats.Commands;
+using ChatService.Application.Interfaces;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
@@ -13,10 +14,52 @@ namespace ChatService.API.Hubs;
 public class ChatHub : Hub
 {
     private readonly IMediator _mediator;
+    private readonly IPresenceTracker _tracker;
 
-    public ChatHub(IMediator mediator)
+    public ChatHub(IMediator mediator, IPresenceTracker tracker)
     {
         _mediator = mediator;
+        _tracker = tracker;
+    }
+
+    public override async Task OnConnectedAsync()
+    {
+        var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userId != null)
+        {
+            // 1. Lưu vào Redis
+            var isFirstConnection = await _tracker.UserConnected(userId, Context.ConnectionId);
+
+            // 2. Nếu là lần đầu bật app -> Báo cho toàn hệ thống
+            if (isFirstConnection)
+            {
+                await Clients.Others.SendAsync("UserIsOnline", userId);
+            }
+
+            // 3. Trả về danh sách user đang online cho chính người vừa đăng nhập
+            var currentUsersOnline = await _tracker.GetOnlineUsers();
+            await Clients.Caller.SendAsync("GetOnlineUsers", currentUsersOnline);
+        }
+
+        await base.OnConnectedAsync();
+    }
+
+    public override async Task OnDisconnectedAsync(Exception? exception)
+    {
+        var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userId != null)
+        {
+            // 1. Rút connection khỏi Redis
+            var isOffline = await _tracker.UserDisconnected(userId, Context.ConnectionId);
+
+            // 2. Nếu đã tắt hết tab/thiết bị -> Báo cho toàn hệ thống
+            if (isOffline)
+            {
+                await Clients.Others.SendAsync("UserIsOffline", userId);
+            }
+        }
+
+        await base.OnDisconnectedAsync(exception);
     }
 
     public async Task SendMessage(Guid conversationId, string content)
