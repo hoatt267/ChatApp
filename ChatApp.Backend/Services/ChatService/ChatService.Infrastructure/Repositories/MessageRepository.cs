@@ -39,5 +39,18 @@ namespace ChatService.Infrastructure.Repositories
                 .Limit(limit)
                 .ToListAsync();
         }
+
+        public async Task MarkMessagesAsReadAsync(Guid conversationId, Guid userId)
+        {
+            // Cập nhật tất cả tin nhắn trong phòng đã đọc bởi userId
+            var filterBuilder = Builders<Message>.Filter;
+            var filter = filterBuilder.Eq(x => x.ConversationId, conversationId) &
+                         filterBuilder.Ne(x => x.SenderId, userId) &
+                         filterBuilder.Not(filterBuilder.AnyEq(x => x.ReadBy, userId));
+
+            var update = Builders<Message>.Update.AddToSet(x => x.ReadBy, userId);
+
+            await _messagesCollection.UpdateManyAsync(filter, update);
+        }
     }
 }

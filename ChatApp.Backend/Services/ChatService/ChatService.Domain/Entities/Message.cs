@@ -15,13 +15,16 @@ namespace ChatService.Domain.Entities
         public Guid ConversationId { get; private set; }
         public Guid SenderId { get; private set; }
         public string Content { get; private set; } = string.Empty;
-        public bool IsRead { get; private set; } = false;
+        public HashSet<Guid> ReadBy { get; private set; } = new HashSet<Guid>();
 
         // Behaviors
-        public void MarkAsRead()
+        public void MarkAsRead(Guid userId)
         {
-            IsRead = true;
-            UpdateTimestamp();
+            if (userId != SenderId && !ReadBy.Contains(userId))
+            {
+                ReadBy.Add(userId);
+                UpdateTimestamp();
+            }
         }
     }
 }

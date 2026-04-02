@@ -1,239 +1,549 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
-    <title>ChatApp SignalR Test (Presence)</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ChatApp Realtime - Pro Version</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
     <style>
       body {
-        font-family: Arial;
+        font-family: Arial, sans-serif;
+        margin: 0;
         padding: 20px;
+        background-color: #f4f7f6;
+      }
+      .container {
+        display: flex;
+        gap: 20px;
+        height: 80vh;
+      }
+
+      /* Cột trái: Danh bạ */
+      .sidebar {
+        width: 300px;
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+      }
+      .conversation-item {
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+      .conversation-item:hover {
+        background: #e9ecef;
+      }
+      .conversation-item.active {
+        background: #d1e7dd;
+        font-weight: bold;
+      }
+      .create-chat-box {
+        margin-top: auto;
+        padding-top: 15px;
+        border-top: 1px solid #ddd;
+      }
+
+      /* Cột phải: Khung chat */
+      .chat-area {
+        flex: 1;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
       }
       #chatBox {
+        flex: 1;
+        overflow-y: auto;
         border: 1px solid #ccc;
         padding: 10px;
-        width: 600px;
-        max-height: 400px;
-        overflow-y: auto;
-        background: #f9f9f9;
+        margin-bottom: 10px;
+        background: #fafafa;
+        border-radius: 4px;
       }
       .msg {
-        margin: 5px 0;
-        padding: 5px;
-        border-bottom: 1px dashed #eee;
+        margin-bottom: 8px;
+        padding: 8px;
+        border-radius: 5px;
+        background-color: #e9ecef;
       }
-      .history {
-        color: gray;
-      }
-      .realtime {
-        color: blue;
-        font-weight: bold;
+      .msg.my-msg {
+        background-color: #d1e7dd;
+        text-align: right;
       }
       .time {
         font-size: 0.8em;
-        color: #888;
+        color: gray;
       }
-      #loadMoreBtn {
-        width: 100%;
-        padding: 10px;
-        margin-bottom: 10px;
-        cursor: pointer;
-        display: none;
-        background: #e0e0e0;
+      .controls {
+        display: flex;
+        gap: 10px;
+      }
+      input[type="text"] {
+        flex: 1;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+      button {
+        padding: 8px 15px;
+        background: #0d6efd;
+        color: white;
         border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #0b5ed7;
       }
 
-      /* --- CSS MỚI CHO ONLINE STATUS --- */
-      .online-panel {
-        border: 2px solid #4caf50;
-        padding: 10px;
-        margin-bottom: 15px;
-        background: #eaffea;
-        width: 600px;
-        border-radius: 5px;
-      }
-      .dot {
-        height: 12px;
-        width: 12px;
-        background-color: #4caf50;
-        border-radius: 50%;
-        display: inline-block;
-        margin-right: 5px;
-        box-shadow: 0 0 5px #4caf50;
-      }
-      .user-item {
-        margin: 5px 0;
-        font-family: monospace;
-        font-size: 14px;
+      /* Header kết nối */
+      .header-panel {
+        margin-bottom: 20px;
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       }
     </style>
   </head>
   <body>
-    <h2>Test SignalR & Trạng thái Online/Offline</h2>
-
-    <label>Access Token:</label><br />
-    <textarea
-      id="tokenInput"
-      rows="3"
-      cols="80"
-      placeholder="Paste Access Token vào đây..."
-    ></textarea
-    ><br /><br />
-
-    <button onclick="connect()">1. Kết nối SignalR</button>
-    <button onclick="joinRoom()">2. Join Phòng Chat</button><br /><br />
-
-    <div class="online-panel">
-      <strong>🟢 Đang Online:</strong>
-      <div id="onlineUsersList" style="margin-top: 10px; padding-left: 10px">
-        <em>Chưa kết nối...</em>
-      </div>
+    <div class="header-panel">
+      <h3>1. Đăng nhập & Kết nối</h3>
+      <input
+        type="text"
+        id="tokenInput"
+        placeholder="Dán Access Token vào đây..."
+        style="width: 70%"
+      />
+      <button onclick="connect()">Kết Nối Hệ Thống</button>
+      <span id="connectionStatus" style="color: red; margin-left: 10px"
+        >Chưa kết nối</span
+      >
     </div>
 
-    <label>Tin nhắn:</label><br />
-    <input
-      type="text"
-      id="messageInput"
-      size="50"
-      placeholder="Nhập tin nhắn..."
-    />
-    <button onclick="sendMessage()">3. Gửi tin nhắn</button>
+    <div class="container">
+      <div class="sidebar">
+        <h3>Danh bạ của bạn</h3>
+        <div
+          style="
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #e8f5e9;
+            border-radius: 4px;
+            font-size: 0.85em;
+          "
+        >
+          <strong style="color: green">🟢 Đang Online (Test):</strong>
+          <ul
+            id="onlineUsersList"
+            style="margin: 5px 0 0; padding-left: 20px; color: #555"
+          >
+            <li>Đang tải...</li>
+          </ul>
+        </div>
+        <div id="conversationList" style="flex: 1; overflow-y: auto">
+          <em style="color: gray; font-size: 0.9em"
+            >Hãy kết nối để tải danh bạ...</em
+          >
+        </div>
 
-    <hr />
-    <h3>Khung Chat:</h3>
-    <div id="chatBox">
-      <button id="loadMoreBtn" onclick="loadMore()">
-        Lấy thêm tin nhắn cũ ⬆️
-      </button>
-      <div id="messagesList"></div>
+        <div class="create-chat-box">
+          <h4>Tạo Chat 1-1</h4>
+          <input
+            type="text"
+            id="newTargetId"
+            placeholder="Nhập User ID người nhận..."
+            style="width: 100%; margin-bottom: 5px; box-sizing: border-box"
+          />
+          <button
+            onclick="createPrivateChat()"
+            style="width: 100%; background: #198754"
+          >
+            Tạo / Mở Chat
+          </button>
+        </div>
+
+        <div
+          class="create-chat-box"
+          style="margin-top: 10px; border-top: 1px dashed #ccc"
+        >
+          <h4>Tạo Group Chat</h4>
+          <input
+            type="text"
+            id="groupTitle"
+            placeholder="Tên nhóm..."
+            style="width: 100%; margin-bottom: 5px; box-sizing: border-box"
+          />
+          <input
+            type="text"
+            id="groupTargetIds"
+            placeholder="ID người 1, ID người 2..."
+            style="
+              width: 100%;
+              margin-bottom: 5px;
+              box-sizing: border-box;
+              font-size: 0.8em;
+            "
+            title="Ngăn cách các ID bằng dấu phẩy"
+          />
+          <button
+            onclick="createGroupChat()"
+            style="width: 100%; background: #0dcaf0; color: black"
+          >
+            Tạo Group
+          </button>
+        </div>
+      </div>
+
+      <div class="chat-area">
+        <h3 id="chatTitle">Phòng Chat: (Chưa chọn)</h3>
+        <div
+          id="typingIndicator"
+          style="
+            color: green;
+            font-style: italic;
+            font-size: 0.9em;
+            height: 20px;
+          "
+        ></div>
+
+        <div id="chatBox">
+          <button
+            id="loadMoreBtn"
+            onclick="loadMore()"
+            style="
+              display: none;
+              width: 100%;
+              margin-bottom: 10px;
+              background: #6c757d;
+            "
+          >
+            Tải thêm tin nhắn cũ ⬆️
+          </button>
+          <div id="messagesList"></div>
+        </div>
+
+        <div class="controls">
+          <input
+            type="text"
+            id="messageInput"
+            placeholder="Nhập tin nhắn..."
+            oninput="handleTyping()"
+            disabled
+          />
+          <button id="sendBtn" onclick="sendMessage()" disabled>Gửi tin</button>
+        </div>
+      </div>
     </div>
 
     <script>
       let connection = null;
-      const CONVERSATION_ID = "11111111-1111-1111-1111-111111111111"; // Thay bằng ID phòng chat thật nếu cần
+      let currentUserId = null;
+      let currentConversationId = null;
       let oldestMessageTimestamp = null;
+      let token = "";
+      let onlineUsers = [];
 
-      // --- BIẾN QUẢN LÝ ONLINE ---
-      let onlineUsers = new Set();
-
-      // --- HÀM VẼ LẠI DANH SÁCH ONLINE ---
-      function renderOnlineUsers() {
-        const list = document.getElementById("onlineUsersList");
-        list.innerHTML = "";
-
-        if (onlineUsers.size === 0) {
-          list.innerHTML = "<em>Không có ai online...</em>";
-          return;
+      // Giải mã JWT
+      function parseJwt(token) {
+        try {
+          const base64Url = token.split(".")[1];
+          const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+          const jsonPayload = decodeURIComponent(
+            window
+              .atob(base64)
+              .split("")
+              .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+              .join(""),
+          );
+          return JSON.parse(jsonPayload)[
+            "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
+          ];
+        } catch (e) {
+          return null;
         }
-
-        onlineUsers.forEach((userId) => {
-          const div = document.createElement("div");
-          div.className = "user-item";
-          div.innerHTML = `<span class="dot"></span> User ID: ${userId}`;
-          list.appendChild(div);
-        });
       }
 
+      // ==========================================
+      // 1. KẾT NỐI SIGNALR VÀ TẢI DANH BẠ
+      // ==========================================
       async function connect() {
-        const token = document.getElementById("tokenInput").value;
-        if (!token) {
-          alert("Vui lòng nhập Token!");
-          return;
-        }
+        token = document.getElementById("tokenInput").value;
+        if (!token) return alert("Vui lòng nhập Token!");
+
+        currentUserId = parseJwt(token);
 
         connection = new signalR.HubConnectionBuilder()
           .withUrl(`http://localhost:5000/chatHub?access_token=${token}`)
           .withAutomaticReconnect()
           .build();
 
-        // ----------------------------------------------------
-        // LẮNG NGHE SỰ KIỆN TỪ BACKEND
-        // ----------------------------------------------------
-
-        // 1. Nhận danh sách ban đầu khi vừa nối máy
-        connection.on("GetOnlineUsers", (users) => {
-          console.log("Danh sách online hiện tại:", users);
-          onlineUsers = new Set(users);
-          renderOnlineUsers();
-        });
-
-        // 2. Có người vừa bật app
-        connection.on("UserIsOnline", (userId) => {
-          console.log("User vừa online:", userId);
-          onlineUsers.add(userId);
-          renderOnlineUsers();
-        });
-
-        // 3. Có người vừa tắt app
-        connection.on("UserIsOffline", (userId) => {
-          console.log("User vừa offline:", userId);
-          onlineUsers.delete(userId);
-          renderOnlineUsers();
-        });
-
-        // 4. Nhận tin nhắn mới (Code cũ)
-        connection.on("ReceiveMessage", (apiResponse) => {
-          const list = document.getElementById("messagesList");
-          const div = document.createElement("div");
-          div.className = "msg realtime";
-          const timeStr = new Date(
-            apiResponse.data.createdAt,
-          ).toLocaleTimeString();
-          div.innerHTML = `[MỚI] User ${apiResponse.data.senderId.substring(0, 5)}...: ${apiResponse.data.content} <span class="time">(${timeStr})</span>`;
-          list.appendChild(div);
-
-          const chatBox = document.getElementById("chatBox");
-          chatBox.scrollTop = chatBox.scrollHeight;
-        });
+        setupSignalREvents();
 
         try {
           await connection.start();
-          alert("✅ KẾT NỐI SIGNALR THÀNH CÔNG!");
+          document.getElementById("connectionStatus").innerText =
+            "🟢 Đã kết nối (Online)";
+          document.getElementById("connectionStatus").style.color = "green";
+
+          // Kết nối thành công -> Gọi API lấy danh bạ
+          await fetchConversations();
         } catch (err) {
           console.error(err);
-          alert("❌ Kết nối thất bại, check console (F12)");
+          alert("Kết nối thất bại, check F12");
         }
       }
 
-      async function joinRoom() {
-        if (connection) {
-          await connection.invoke("JoinConversation", CONVERSATION_ID);
-          alert(`Đã join phòng: ${CONVERSATION_ID}`);
-          await fetchHistory(false);
+      function setupSignalREvents() {
+        // Lắng nghe tin nhắn mới
+        connection.on("ReceiveMessage", async (apiResponse) => {
+          const msg = apiResponse.data;
+          if (
+            String(msg.conversationId).toLowerCase() !==
+            String(currentConversationId).toLowerCase()
+          ) {
+            return;
+          }
+
+          renderSingleMessage(msg, true);
+          const chatBox = document.getElementById("chatBox");
+          chatBox.scrollTop = chatBox.scrollHeight;
+
+          if (msg.senderId !== currentUserId) {
+            await connection.invoke("MarkAsRead", currentConversationId);
+          }
+        });
+
+        // Lắng nghe sự kiện Đã xem
+        connection.on("UserHasReadMessages", (conversationId, userId) => {
+          if (
+            String(userId).toLowerCase() === String(currentUserId).toLowerCase()
+          )
+            return;
+
+          if (conversationId === currentConversationId) {
+            const shortUserId = userId.substring(0, 5);
+            document.querySelectorAll(".my-msg").forEach((m) => {
+              const receiptDiv = m.querySelector(".read-receipt");
+              if (receiptDiv && !receiptDiv.innerHTML.includes(shortUserId)) {
+                receiptDiv.innerHTML += `👀 Đã xem bởi ${shortUserId}... `;
+              }
+            });
+          }
+        });
+
+        // Lắng nghe Typing
+        connection.on("UserTyping", (conversationId, userId, isUserTyping) => {
+          if (conversationId === currentConversationId) {
+            document.getElementById("typingIndicator").innerText = isUserTyping
+              ? `User ${userId.substring(0, 5)}... đang gõ... ✍️`
+              : "";
+          }
+        });
+
+        // Lắng nghe sự kiện ai đó vừa tạo phòng với mình
+        connection.on("NewConversationCreated", async () => {
+          console.log("🔔 Có phòng chat mới được tạo!");
+          await fetchConversations(); // Tự động load lại danh bạ bên trái
+        });
+
+        // ==========================================
+        // XỬ LÝ TRẠNG THÁI ONLINE / OFFLINE
+        // ==========================================
+
+        // 1. Nhận toàn bộ danh sách lúc vừa kết nối
+        connection.on("GetOnlineUsers", (users) => {
+          onlineUsers = users;
+          renderOnlineUsers();
+        });
+
+        // 2. Nhận thông báo khi có 1 người MỚI online
+        connection.on("UserIsOnline", (userId) => {
+          if (!onlineUsers.includes(userId)) {
+            onlineUsers.push(userId);
+            renderOnlineUsers();
+          }
+        });
+
+        // 3. Nhận thông báo khi có 1 người VỪA OFFLINE
+        connection.on("UserIsOffline", (userId) => {
+          onlineUsers = onlineUsers.filter((id) => id !== userId);
+          renderOnlineUsers();
+        });
+
+        // Hàm vẽ lại danh sách (Helper function)
+        function renderOnlineUsers() {
+          const list = document.getElementById("onlineUsersList");
+          list.innerHTML = "";
+          if (onlineUsers.length === 0) {
+            list.innerHTML = "<li>Không có ai online</li>";
+            return;
+          }
+          onlineUsers.forEach((u) => {
+            const isMe = u === currentUserId ? " (Tôi)" : "";
+            list.innerHTML += `<li>${u.substring(0, 5)}...${isMe}</li>`;
+          });
         }
       }
 
-      async function sendMessage() {
-        const content = document.getElementById("messageInput").value;
-        if (connection && content) {
-          await connection.invoke("SendMessage", CONVERSATION_ID, content);
-          document.getElementById("messageInput").value = "";
+      // ==========================================
+      // 2. API QUẢN LÝ PHÒNG CHAT
+      // ==========================================
+      async function fetchConversations() {
+        try {
+          const res = await fetch("http://localhost:5000/api/conversations", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const json = await res.json();
+
+          const list = document.getElementById("conversationList");
+          list.innerHTML = ""; // Xóa trắng
+
+          if (json.data.length === 0) {
+            list.innerHTML = "<em>Chưa có cuộc trò chuyện nào.</em>";
+            return;
+          }
+
+          json.data.forEach((conv) => {
+            const div = document.createElement("div");
+            div.className = "conversation-item";
+            div.id = `conv-${conv.id}`;
+            // Tên hiển thị: Nếu là Group thì lấy Title, nếu 1-1 thì ghi Private Chat (Sau này có RabbitMQ sẽ map ra tên User thật)
+            const title = conv.isGroup ? `👥 ${conv.title}` : `👤 Private Chat`;
+            div.innerText = title;
+            div.onclick = () => switchConversation(conv.id, title);
+            list.appendChild(div);
+          });
+        } catch (err) {
+          console.error("Lỗi lấy danh bạ:", err);
         }
       }
 
-      // Hàm lấy lịch sử giữ nguyên (Tôi thu gọn lại cho đỡ rối)
+      async function createPrivateChat() {
+        const targetId = document.getElementById("newTargetId").value;
+        if (!targetId) return alert("Vui lòng nhập ID!");
+
+        try {
+          const res = await fetch(
+            "http://localhost:5000/api/conversations/private",
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(targetId),
+            },
+          );
+          const json = await res.json();
+
+          if (res.ok) {
+            document.getElementById("newTargetId").value = "";
+            await fetchConversations(); // Tải lại danh bạ
+            switchConversation(json.data.id, "👤 Private Chat"); // Tự động nhảy vào phòng vừa tạo
+          } else {
+            alert("Lỗi: " + json.message);
+          }
+        } catch (err) {
+          console.error("Lỗi tạo phòng:", err);
+        }
+      }
+
+      async function createGroupChat() {
+        const title = document.getElementById("groupTitle").value;
+        const targetIdsStr = document.getElementById("groupTargetIds").value;
+
+        if (!title) return alert("Vui lòng nhập tên nhóm!");
+        if (!targetIdsStr)
+          return alert("Vui lòng nhập ít nhất 1 ID người nhận!");
+
+        // Cắt chuỗi ID bằng dấu phẩy, loại bỏ khoảng trắng dư thừa
+        const targetIdsArray = targetIdsStr
+          .split(",")
+          .map((id) => id.trim())
+          .filter((id) => id !== "");
+
+        try {
+          const res = await fetch(
+            "http://localhost:5000/api/conversations/group",
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                title: title,
+                targetUserIds: targetIdsArray,
+              }),
+            },
+          );
+          const json = await res.json();
+
+          if (res.ok) {
+            // Xóa trắng form
+            document.getElementById("groupTitle").value = "";
+            document.getElementById("groupTargetIds").value = "";
+
+            await fetchConversations(); // Tải lại danh bạ
+            switchConversation(json.data.id, `👥 ${json.data.title}`); // Nhảy vào group luôn
+          } else {
+            alert("Lỗi: " + json.message);
+          }
+        } catch (err) {
+          console.error("Lỗi tạo Group:", err);
+        }
+      }
+      // ==========================================
+      // 3. LOGIC CHUYỂN PHÒNG & LOAD TIN NHẮN
+      // ==========================================
+      async function switchConversation(conversationId, title) {
+        currentConversationId = conversationId;
+        document.getElementById("chatTitle").innerText = `Phòng Chat: ${title}`;
+        document.getElementById("messageInput").disabled = false;
+        document.getElementById("sendBtn").disabled = false;
+        document.getElementById("messagesList").innerHTML = ""; // Xóa tin nhắn phòng cũ
+        oldestMessageTimestamp = null;
+
+        // Đổi màu active trên danh bạ
+        document
+          .querySelectorAll(".conversation-item")
+          .forEach((el) => el.classList.remove("active"));
+        const activeItem = document.getElementById(`conv-${conversationId}`);
+        if (activeItem) activeItem.classList.add("active");
+
+        // Tham gia SignalR Group
+        await connection.invoke("JoinConversation", currentConversationId);
+
+        // Lấy lịch sử và báo đã xem
+        await fetchHistory(false);
+        await connection.invoke("MarkAsRead", currentConversationId);
+      }
+
       async function fetchHistory(isLoadMore = false) {
-        const token = document.getElementById("tokenInput").value;
-        let url = `http://localhost:5000/api/conversations/${CONVERSATION_ID}/messages?limit=5`;
+        let url = `http://localhost:5000/api/conversations/${currentConversationId}/messages?limit=10`;
         if (isLoadMore && oldestMessageTimestamp)
           url += `&before=${encodeURIComponent(oldestMessageTimestamp)}`;
 
         try {
-          const response = await fetch(url, {
+          const res = await fetch(url, {
             headers: { Authorization: `Bearer ${token}` },
           });
-          const apiResponse = await response.json();
+          const json = await res.json();
 
-          if (apiResponse.success && apiResponse.data.length > 0) {
+          if (json.success && json.data.length > 0) {
             const list = document.getElementById("messagesList");
-            if (!isLoadMore) list.innerHTML = "";
-            oldestMessageTimestamp = apiResponse.data[0].createdAt;
+            oldestMessageTimestamp = json.data[0].createdAt; // Tin nhắn cũ nhất nằm đầu mảng (do order by asc)
 
             const tempFragment = document.createDocumentFragment();
-            apiResponse.data.forEach((msg) => {
-              const div = document.createElement("div");
-              div.className = "msg history";
-              const timeStr = new Date(msg.createdAt).toLocaleTimeString();
-              div.innerHTML = `[Lịch sử] User ${msg.senderId.substring(0, 5)}...: ${msg.content} <span class="time">(${timeStr})</span>`;
+            json.data.forEach((msg) => {
+              const div = createMessageHtml(msg);
               tempFragment.appendChild(div);
             });
 
@@ -244,9 +554,9 @@
               const chatBox = document.getElementById("chatBox");
               chatBox.scrollTop = chatBox.scrollHeight;
             }
-            if (apiResponse.data.length < 5)
+            if (json.data.length < 10)
               document.getElementById("loadMoreBtn").style.display = "none";
-          } else if (apiResponse.success && apiResponse.data.length === 0) {
+          } else if (json.data.length === 0 && isLoadMore) {
             alert("Đã hết tin nhắn cũ!");
             document.getElementById("loadMoreBtn").style.display = "none";
           }
@@ -257,6 +567,92 @@
 
       async function loadMore() {
         await fetchHistory(true);
+      }
+
+      // ==========================================
+      // 4. GỬI VÀ RENDER TIN NHẮN
+      // ==========================================
+      async function sendMessage() {
+        const content = document.getElementById("messageInput").value;
+        if (connection && content && currentConversationId) {
+          try {
+            await connection.invoke(
+              "SendMessage",
+              currentConversationId,
+              content,
+            );
+
+            // 1. Xóa trắng ô input
+            document.getElementById("messageInput").value = "";
+
+            // 2. FIX UX ĐANG GÕ: Tắt ngay lập tức hẹn giờ và báo cho Server là "Tôi gõ xong rồi"
+            isTyping = false;
+            clearTimeout(typingTimeout);
+            await connection.invoke(
+              "NotifyTyping",
+              currentConversationId,
+              false,
+            );
+            document.getElementById("typingIndicator").innerText = ""; // Xóa chữ trên UI của chính mình
+          } catch (err) {
+            console.error("❌ LỖI GỬI TIN NHẮN:", err);
+            alert("Gửi tin nhắn thất bại! Bấm F12 mở tab Console để xem lỗi.");
+          }
+        }
+      }
+
+      function createMessageHtml(msg) {
+        const div = document.createElement("div");
+        const isMyMsg = msg.senderId === currentUserId;
+        div.className = `msg ${isMyMsg ? "my-msg" : ""}`;
+
+        const timeStr = new Date(msg.createdAt).toLocaleTimeString();
+        const prefix = isMyMsg ? "TÔI" : `User ${msg.senderId.substring(0, 5)}`;
+
+        let html = `<strong>${prefix}</strong>: ${msg.content} <br><span class="time">${timeStr}</span>`;
+
+        if (isMyMsg) {
+          let readText = "";
+          if (msg.readBy && msg.readBy.length > 0) {
+            const viewers = msg.readBy
+              .filter(
+                (id) =>
+                  String(id).toLowerCase() !==
+                  String(currentUserId).toLowerCase(),
+              )
+              .map((id) => id.substring(0, 5));
+            if (viewers.length > 0)
+              readText = `👀 Đã xem bởi ${viewers.join(", ")}...`;
+          }
+          html += `<div class="read-receipt" style="font-size:0.75em; color:green;">${readText}</div>`;
+        }
+        div.innerHTML = html;
+        return div;
+      }
+
+      function renderSingleMessage(msg) {
+        const list = document.getElementById("messagesList");
+        list.appendChild(createMessageHtml(msg));
+      }
+
+      // Typing debounce
+      let typingTimeout = null,
+        isTyping = false;
+      function handleTyping() {
+        if (!connection || !currentConversationId) return;
+        if (!isTyping) {
+          isTyping = true;
+          connection
+            .invoke("NotifyTyping", currentConversationId, true)
+            .catch((e) => console.error(e));
+        }
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+          isTyping = false;
+          connection
+            .invoke("NotifyTyping", currentConversationId, false)
+            .catch((e) => console.error(e));
+        }, 2000);
       }
     </script>
   </body>

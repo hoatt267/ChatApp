@@ -1,4 +1,5 @@
 using ChatApp.Shared.Interfaces;
+using ChatApp.Shared.Middlewares;
 using ChatApp.Shared.Repositories;
 using ChatService.Application.Features.Chats.Commands;
 using ChatService.Application.Interfaces;
@@ -115,6 +116,10 @@ namespace ChatService.API
 
             // 2. Đăng ký Message Repository dùng cho MongoDB
             builder.Services.AddScoped<IMessageRepository, MessageRepository>();
+
+            // Đăng ký Global Exception Handler
+            builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+            builder.Services.AddProblemDetails();
         }
     }
 }
