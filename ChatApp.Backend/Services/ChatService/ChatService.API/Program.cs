@@ -1,3 +1,4 @@
+using ChatApp.Shared.Middlewares;
 using ChatService.API;
 using ChatService.API.Hubs;
 
@@ -8,6 +9,8 @@ builder.Services.AddControllers();
 builder.RegisterExtension();
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 app.UseAuthentication();
 app.UseAuthorization();

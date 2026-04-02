@@ -9,6 +9,8 @@ namespace ChatService.Application.Mappings
         public ChatMappingProfile()
         {
             CreateMap<Message, MessageDto>();
+
+            CreateMap<Conversation, ConversationDto>();
         }
     }
 }
