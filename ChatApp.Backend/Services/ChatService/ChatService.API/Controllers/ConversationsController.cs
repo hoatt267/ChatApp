@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using ChatApp.Shared.Exceptions;
 using ChatApp.Shared.Wrappers;
+using ChatService.API.Hubs;
 using ChatService.Application.DTOs;
 using ChatService.Application.DTOs.Requests;
 using ChatService.Application.Features.Chats.Commands.CreateGroupChat;
@@ -10,6 +11,7 @@ using ChatService.Application.Features.Chats.Queries.GetUserConversations;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace ChatService.API.Controllers
 {
@@ -19,10 +21,12 @@ namespace ChatService.API.Controllers
     public class ConversationsController : ControllerBase
     {
         private readonly IMediator _mediator;
+        private readonly IHubContext<ChatHub> _chatHubContext;
 
-        public ConversationsController(IMediator mediator)
+        public ConversationsController(IMediator mediator, IHubContext<ChatHub> chatHubContext)
         {
             _mediator = mediator;
+            _chatHubContext = chatHubContext;
         }
 
         [HttpGet("{conversationId}/messages")]
@@ -62,6 +66,9 @@ namespace ChatService.API.Controllers
             var command = new CreatePrivateChatCommand(targetUserId, currentUserId);
             var result = await _mediator.Send(command);
 
+            // Bắn tín hiệu bí mật gọi đích danh User 2 báo rằng "Ê, có người vừa tạo phòng với bạn kìa, reload danh bạ đi!"
+            await _chatHubContext.Clients.User(targetUserId.ToString()).SendAsync("NewConversationCreated");
+
             return Ok(ApiResponse<ConversationDto>.Ok(result, "Private chat created or retrieved successfully."));
         }
 
@@ -77,6 +84,12 @@ namespace ChatService.API.Controllers
 
             var command = new CreateGroupChatCommand(request.Title, request.TargetUserIds, currentUserId);
             var result = await _mediator.Send(command);
+
+            // Bắn tín hiệu bí mật gọi đích danh tất cả User trong TargetUserIds báo rằng "Ê, có người vừa tạo phòng với bạn kìa, reload danh bạ đi!"
+            var targetUserIdsString = request.TargetUserIds.Select(id => id.ToString()).ToList();
+
+            // Dùng Clients.Users để bắn tín hiệu đến tất cả thành viên được mời vào nhóm
+            await _chatHubContext.Clients.Users(targetUserIdsString).SendAsync("NewConversationCreated");
 
             return Ok(ApiResponse<ConversationDto>.Ok(result, "Group chat created successfully."));
         }

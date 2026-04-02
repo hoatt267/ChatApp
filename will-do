@@ -1,1 +1,21 @@
 // TODO: Validate TargetUserId via replicated User table (RabbitMQ) - CreatePrivateChatCommandHandler
+
+
+2.Tích hợp Message Broker(RabbitMQ / Kafka)
+
+Tình trạng hiện tại: IdentityService và ChatService đang hoàn toàn mù tịt về nhau. Nếu bên Identity, user đổi tên (FullName) hoặc đổi Avatar, thì bên ChatService không hề biết để cập nhật.
+
+Cần làm: Cài đặt RabbitMQ để khi IdentityService update user, nó "bắn" một event UserUpdated. ChatService lắng nghe event này và cập nhật lại Avatar/Tên hiển thị trên khung chat.
+
+3. Tính năng gửi File / Hình ảnh (Media Upload)
+
+Tình trạng hiện tại: Chúng ta mới chỉ gửi được text.
+
+Cần làm: Viết API upload file, có thể lưu trữ tạm thời ở thư mục local (hoặc chuẩn bị code để sau này quăng lên Azure Blob Storage), sau đó gửi link file qua SignalR.
+
+4. Tiến thẳng đến DevOps (Docker Compose)
+
+Nếu bạn cảm thấy tính năng code thế là đủ xài rồi: Chúng ta sẽ dừng code tính năng mới, bắt tay vào viết Dockerfile cho từng project, viết docker-compose.yml để chạy một phát lên luôn cả Postgres, Mongo, Redis, Gateway, Identity, và Chat.
+
+
+Ở môi trường Production thực tế, người ta sẽ khắc phục vụ này bằng cách gắn thời gian sống (TTL) cho Key trong Redis, kết hợp cơ chế gửi Ping/Pong liên tục để xác nhận user còn sống. Nhưng với MVP hiện tại, chúng ta không cần làm phức tạp hóa vấn đề)
