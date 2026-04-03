@@ -5,6 +5,8 @@ using IdentityService.Domain.Enums;
 using ChatApp.Shared.Exceptions;
 using MediatR;
 using ChatApp.Shared.Interfaces;
+using MassTransit;
+using ChatApp.Shared.Events;
 
 namespace IdentityService.Application.Features.Users.Commands.CreateUser
 {
@@ -13,12 +15,14 @@ namespace IdentityService.Application.Features.Users.Commands.CreateUser
         private readonly IRepository<User> _userRepository;
         private readonly IRepository<Role> _roleRepository;
         private readonly IMapper _mapper;
+        private readonly IPublishEndpoint _publishEndpoint;
 
-        public CreateUserCommandHandler(IRepository<User> userRepository, IRepository<Role> roleRepository, IMapper mapper)
+        public CreateUserCommandHandler(IRepository<User> userRepository, IRepository<Role> roleRepository, IMapper mapper, IPublishEndpoint publishEndpoint)
         {
             _userRepository = userRepository;
             _roleRepository = roleRepository;
             _mapper = mapper;
+            _publishEndpoint = publishEndpoint;
         }
 
         public async Task<UserResponseDto> Handle(CreateUserCommand request, CancellationToken cancellationToken)
@@ -46,6 +50,16 @@ namespace IdentityService.Application.Features.Users.Commands.CreateUser
             user.UserRoles.Add(new UserRole(userId: user.Id, roleId: role.Id));
 
             await _userRepository.AddAsync(user);
+
+            // Sau khi tạo user thành công, publish một sự kiện UserCreateEvent lên RabbitMQ
+            var userCreateEvent = new UserCreatedEvent
+            {
+                UserId = user.Id,
+                Email = user.Email,
+                FullName = user.FullName
+            };
+
+            await _publishEndpoint.Publish(userCreateEvent, cancellationToken);
 
             // Map sang DTO và trả về
             return _mapper.Map<UserResponseDto>(user);

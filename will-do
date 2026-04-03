@@ -1,5 +1,6 @@
 // TODO: Validate TargetUserId via replicated User table (RabbitMQ) - CreatePrivateChatCommandHandler
 
+//Avatar user
 
 2.Tích hợp Message Broker(RabbitMQ / Kafka)
 
@@ -17,5 +18,26 @@ Cần làm: Viết API upload file, có thể lưu trữ tạm thời ở thư m
 
 Nếu bạn cảm thấy tính năng code thế là đủ xài rồi: Chúng ta sẽ dừng code tính năng mới, bắt tay vào viết Dockerfile cho từng project, viết docker-compose.yml để chạy một phát lên luôn cả Postgres, Mongo, Redis, Gateway, Identity, và Chat.
 
-
 Ở môi trường Production thực tế, người ta sẽ khắc phục vụ này bằng cách gắn thời gian sống (TTL) cho Key trong Redis, kết hợp cơ chế gửi Ping/Pong liên tục để xác nhận user còn sống. Nhưng với MVP hiện tại, chúng ta không cần làm phức tạp hóa vấn đề)
+
+=========================================================================================================
+docker run -d --hostname my-rabbit --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+
+# Cài cho IdentityService
+
+dotnet add Services/IdentityService/IdentityService.API package MassTransit.RabbitMQ
+
+# Cài cho ChatService
+
+dotnet add Services/ChatService/ChatService.API package MassTransit.RabbitMQ
+
+dotnet add Services/IdentityService/IdentityService.Application package MassTransit.Abstractions
+dotnet add Services/ChatService/ChatService.Application package MassTransit.Abstractions
+
+# Tạo file migration
+
+dotnet ef migrations add AddUserTableToChatService -p Services/ChatService/ChatService.Infrastructure -s Services/ChatService/ChatService.API
+
+# Cập nhật xuống Database PostgreSQL
+
+dotnet ef database update -p Services/ChatService/ChatService.Infrastructure -s Services/ChatService/ChatService.API
