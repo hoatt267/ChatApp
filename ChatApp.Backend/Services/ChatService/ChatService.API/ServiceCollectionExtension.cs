@@ -4,7 +4,7 @@ using ChatApp.Shared.Repositories;
 using ChatService.Application.EventConsumers;
 using ChatService.Application.Features.Chats.Commands;
 using ChatService.Application.Interfaces;
-using ChatService.Application.Mappings;
+using ChatService.Application.Services;
 using ChatService.Infrastructure.DatabaseContext;
 using ChatService.Infrastructure.Presence;
 using ChatService.Infrastructure.Repositories;
@@ -26,6 +26,13 @@ namespace ChatService.API
         public static void RegisterExtension(this WebApplicationBuilder builder)
         {
             RegisterInfrastructure(builder);
+            RegisterApplication(builder);
+        }
+
+        private static void RegisterApplication(WebApplicationBuilder builder)
+        {
+            // Đăng ký Enricher Service
+            builder.Services.AddScoped<IConversationEnricher, ConversationEnricher>();
         }
 
         private static void RegisterInfrastructure(WebApplicationBuilder builder)
@@ -123,10 +130,10 @@ namespace ChatService.API
             builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
             // Đăng ký AutoMapper (quét profile trong tầng Application)
-            builder.Services.AddAutoMapper(cfg =>
-            {
-                cfg.AddMaps(typeof(ChatMappingProfile).Assembly);
-            });
+            // builder.Services.AddAutoMapper(cfg =>
+            // {
+            //     cfg.AddMaps(typeof(ChatMappingProfile).Assembly);
+            // });
 
             // Đăng ký MediatR (quét command trong tầng Application)
             builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(SendMessageCommand).Assembly));

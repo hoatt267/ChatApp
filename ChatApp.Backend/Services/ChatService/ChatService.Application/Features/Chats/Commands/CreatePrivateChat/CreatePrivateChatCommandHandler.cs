@@ -1,6 +1,8 @@
 using AutoMapper;
 using ChatApp.Shared.Interfaces;
 using ChatService.Application.DTOs;
+using ChatService.Application.DTOs.Responses;
+using ChatService.Application.Interfaces;
 using ChatService.Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -10,12 +12,12 @@ namespace ChatService.Application.Features.Chats.Commands.CreatePrivateChat
     public class CreatePrivateChatCommandHandler : IRequestHandler<CreatePrivateChatCommand, ConversationDto>
     {
         private readonly IRepository<Conversation> _conversationRepository;
-        private readonly IMapper _mapper;
+        private readonly IConversationEnricher _enricher;
 
-        public CreatePrivateChatCommandHandler(IRepository<Conversation> conversationRepository, IMapper mapper)
+        public CreatePrivateChatCommandHandler(IRepository<Conversation> conversationRepository, IConversationEnricher enricher)
         {
             _conversationRepository = conversationRepository;
-            _mapper = mapper;
+            _enricher = enricher;
         }
 
         public async Task<ConversationDto> Handle(CreatePrivateChatCommand request, CancellationToken cancellationToken)
@@ -27,22 +29,18 @@ namespace ChatService.Application.Features.Chats.Commands.CreatePrivateChat
                 include: q => q.Include(c => c.Participants)
             );
 
-            if (existingChat != null)
+            Conversation conversationToReturn = existingChat;
+
+            // Nếu chưa có, tạo mới và lưu xuống DB
+            if (conversationToReturn == null)
             {
-                return _mapper.Map<ConversationDto>(existingChat); // Đã có thì trả về
+                conversationToReturn = new Conversation(null, false);
+                conversationToReturn.Participants.Add(new Participant(conversationToReturn.Id, request.CurrentUserId));
+                conversationToReturn.Participants.Add(new Participant(conversationToReturn.Id, request.TargetUserId));
+                await _conversationRepository.AddAsync(conversationToReturn);
             }
 
-            // 2. Nếu chưa có, tạo mới
-            var newConversation = new Conversation(null, false);
-
-            // Thêm 2 thành viên
-            newConversation.Participants.Add(new Participant(newConversation.Id, request.CurrentUserId));
-            newConversation.Participants.Add(new Participant(newConversation.Id, request.TargetUserId));
-
-            // Lưu xuống DB bằng Generic Repo
-            await _conversationRepository.AddAsync(newConversation);
-
-            return _mapper.Map<ConversationDto>(newConversation);
+            return await _enricher.EnrichSingleAsync(conversationToReturn);
         }
     }
 }

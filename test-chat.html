@@ -357,39 +357,44 @@
         // XỬ LÝ TRẠNG THÁI ONLINE / OFFLINE
         // ==========================================
 
-        // 1. Nhận toàn bộ danh sách lúc vừa kết nối
+        // 1. Nhận toàn bộ danh sách lúc vừa kết nối (Bây giờ nó là mảng Object)
         connection.on("GetOnlineUsers", (users) => {
-          onlineUsers = users;
+          onlineUsers = users; // users = [{userId: "...", fullName: "..."}, ...]
           renderOnlineUsers();
         });
 
-        // 2. Nhận thông báo khi có 1 người MỚI online
-        connection.on("UserIsOnline", (userId) => {
-          if (!onlineUsers.includes(userId)) {
-            onlineUsers.push(userId);
+        // 2. Nhận thông báo khi có 1 người MỚI online (Bây giờ nhận Object)
+        connection.on("UserIsOnline", (userObj) => {
+          // Kiểm tra xem đã có trong list chưa
+          if (!onlineUsers.find((u) => u.userId === userObj.userId)) {
+            onlineUsers.push(userObj);
             renderOnlineUsers();
           }
         });
 
-        // 3. Nhận thông báo khi có 1 người VỪA OFFLINE
+        // 3. Người OFF thì vẫn chỉ nhận ID string
         connection.on("UserIsOffline", (userId) => {
-          onlineUsers = onlineUsers.filter((id) => id !== userId);
+          onlineUsers = onlineUsers.filter((u) => u.userId !== userId);
           renderOnlineUsers();
         });
+      }
 
-        // Hàm vẽ lại danh sách (Helper function)
-        function renderOnlineUsers() {
-          const list = document.getElementById("onlineUsersList");
-          list.innerHTML = "";
-          if (onlineUsers.length === 0) {
-            list.innerHTML = "<li>Không có ai online</li>";
-            return;
-          }
-          onlineUsers.forEach((u) => {
-            const isMe = u === currentUserId ? " (Tôi)" : "";
-            list.innerHTML += `<li>${u.substring(0, 5)}...${isMe}</li>`;
-          });
+      function renderOnlineUsers() {
+        const list = document.getElementById("onlineUsersList");
+        list.innerHTML = "";
+        if (onlineUsers.length === 0) {
+          list.innerHTML = "<li>Không có ai online</li>";
+          return;
         }
+        onlineUsers.forEach((u) => {
+          const isMe =
+            String(u.userId).toLowerCase() ===
+            String(currentUserId).toLowerCase()
+              ? " (Tôi)"
+              : "";
+          // Hiển thị tên thật luôn!
+          list.innerHTML += `<li>👤 <strong>${u.fullName}</strong>${isMe}</li>`;
+        });
       }
 
       // ==========================================
@@ -414,10 +419,28 @@
             const div = document.createElement("div");
             div.className = "conversation-item";
             div.id = `conv-${conv.id}`;
-            // Tên hiển thị: Nếu là Group thì lấy Title, nếu 1-1 thì ghi Private Chat (Sau này có RabbitMQ sẽ map ra tên User thật)
-            const title = conv.isGroup ? `👥 ${conv.title}` : `👤 Private Chat`;
-            div.innerText = title;
-            div.onclick = () => switchConversation(conv.id, title);
+
+            // THAY ĐỔI LOGIC HIỂN THỊ TÊN TẠI ĐÂY:
+            let displayTitle = "";
+            if (conv.isGroup) {
+              displayTitle = `👥 ${conv.title}`;
+            } else {
+              // Với chat 1-1, tìm cái người tham gia KHÁC với ID của chính mình
+              const otherPerson = conv.participants.find(
+                (p) =>
+                  String(p.userId).toLowerCase() !==
+                  String(currentUserId).toLowerCase(),
+              );
+
+              // Nếu tìm thấy thì lấy Tên, không thì hiển thị mặc định
+              const otherName = otherPerson
+                ? otherPerson.fullName
+                : "Anonymous User";
+              displayTitle = `👤 ${otherName}`;
+            }
+
+            div.innerText = displayTitle;
+            div.onclick = () => switchConversation(conv.id, displayTitle);
             list.appendChild(div);
           });
         } catch (err) {
@@ -603,11 +626,13 @@
 
       function createMessageHtml(msg) {
         const div = document.createElement("div");
-        const isMyMsg = msg.senderId === currentUserId;
+        const isMyMsg =
+          String(msg.senderId).toLowerCase() ===
+          String(currentUserId).toLowerCase();
         div.className = `msg ${isMyMsg ? "my-msg" : ""}`;
 
         const timeStr = new Date(msg.createdAt).toLocaleTimeString();
-        const prefix = isMyMsg ? "TÔI" : `User ${msg.senderId.substring(0, 5)}`;
+        const prefix = isMyMsg ? "TÔI" : msg.senderName;
 
         let html = `<strong>${prefix}</strong>: ${msg.content} <br><span class="time">${timeStr}</span>`;
 

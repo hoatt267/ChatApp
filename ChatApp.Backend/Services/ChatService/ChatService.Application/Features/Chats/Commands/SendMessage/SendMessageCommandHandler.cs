@@ -12,13 +12,13 @@ namespace ChatService.Application.Features.Chats.Commands
     {
         private readonly IMessageRepository _messageRepository;
         private readonly IRepository<Conversation> _conversationRepository;
-        private readonly IMapper _mapper;
+        private readonly IConversationEnricher _enricher;
 
-        public SendMessageCommandHandler(IMessageRepository messageRepository, IRepository<Conversation> conversationRepository, IMapper mapper)
+        public SendMessageCommandHandler(IMessageRepository messageRepository, IRepository<Conversation> conversationRepository, IConversationEnricher enricher)
         {
             _messageRepository = messageRepository;
             _conversationRepository = conversationRepository;
-            _mapper = mapper;
+            _enricher = enricher;
         }
 
         public async Task<MessageDto> Handle(SendMessageCommand request, CancellationToken cancellationToken)
@@ -32,7 +32,8 @@ namespace ChatService.Application.Features.Chats.Commands
             var message = new Message(request.ConversationId, request.SenderId, request.Content);
             await _messageRepository.AddAsync(message);
 
-            return _mapper.Map<MessageDto>(message);
+            var enrichedMessages = await _enricher.EnrichMessagesAsync(new List<Message> { message });
+            return enrichedMessages.First();
         }
     }
 }
