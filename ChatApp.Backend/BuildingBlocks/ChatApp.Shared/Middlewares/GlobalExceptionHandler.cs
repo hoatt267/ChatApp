@@ -32,6 +32,11 @@ namespace ChatApp.Shared.Middlewares
                     response.Message = badRequestEx.Message;
                     break;
 
+                case ForbiddenException forbiddenEx:
+                    httpContext.Response.StatusCode = StatusCodes.Status403Forbidden;
+                    response.Message = forbiddenEx.Message;
+                    break;
+
                 default: // Các lỗi crash code, lỗi DB... (Lỗi 500)
                     httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
                     response.Message = "An unexpected error occurred. Please try again later.";

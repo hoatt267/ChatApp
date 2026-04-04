@@ -1,5 +1,6 @@
 // TODO: Validate TargetUserId via replicated User table (RabbitMQ) - CreatePrivateChatCommandHandler
 
+//Avatar user
 
 2.Tích hợp Message Broker(RabbitMQ / Kafka)
 
@@ -17,5 +18,6 @@ Cần làm: Viết API upload file, có thể lưu trữ tạm thời ở thư m
 
 Nếu bạn cảm thấy tính năng code thế là đủ xài rồi: Chúng ta sẽ dừng code tính năng mới, bắt tay vào viết Dockerfile cho từng project, viết docker-compose.yml để chạy một phát lên luôn cả Postgres, Mongo, Redis, Gateway, Identity, và Chat.
 
-
 Ở môi trường Production thực tế, người ta sẽ khắc phục vụ này bằng cách gắn thời gian sống (TTL) cho Key trong Redis, kết hợp cơ chế gửi Ping/Pong liên tục để xác nhận user còn sống. Nhưng với MVP hiện tại, chúng ta không cần làm phức tạp hóa vấn đề)
+
+=========================================================================================================

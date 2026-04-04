@@ -1,13 +1,16 @@
 using ChatApp.Shared.Exceptions;
+using ChatApp.Shared.Interfaces;
 using ChatApp.Shared.Wrappers;
 using ChatService.Application.DTOs;
 using ChatService.Application.Features.Chats.Commands;
 using ChatService.Application.Features.Chats.Commands.MarkAsRead;
 using ChatService.Application.Interfaces;
+using ChatService.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;
+using ChatApp.Shared.Extensions;
 
 namespace ChatService.API.Hubs;
 
@@ -16,48 +19,62 @@ public class ChatHub : Hub
 {
     private readonly IMediator _mediator;
     private readonly IPresenceTracker _tracker;
+    private readonly IRepository<User> _userRepository;
+    private readonly ILogger<ChatHub> _logger;
 
-    public ChatHub(IMediator mediator, IPresenceTracker tracker)
+    public ChatHub(IMediator mediator, IPresenceTracker tracker, IRepository<User> userRepository, ILogger<ChatHub> logger)
     {
         _mediator = mediator;
         _tracker = tracker;
+        _userRepository = userRepository;
+        _logger = logger;
     }
 
     public override async Task OnConnectedAsync()
     {
-        var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (userId != null)
+        var userId = Context.User!.GetUserId();
+        var userIdString = userId.ToString();
+
+        var isFirstConnection = await _tracker.UserConnected(userIdString, Context.ConnectionId);
+
+        // 2. Lấy tên của chính người vừa đăng nhập
+        var me = await _userRepository.GetAsync<User>(predicate: u => u.Id == userId);
+        var myName = me != null ? me.FullName : "Anonymous";
+
+        if (isFirstConnection)
         {
-            // 1. Lưu vào Redis
-            var isFirstConnection = await _tracker.UserConnected(userId, Context.ConnectionId);
-
-            // 2. Nếu là lần đầu bật app -> Báo cho toàn hệ thống
-            if (isFirstConnection)
-            {
-                await Clients.Others.SendAsync("UserIsOnline", userId);
-            }
-
-            // 3. Trả về danh sách user đang online cho chính người vừa đăng nhập
-            var currentUsersOnline = await _tracker.GetOnlineUsers();
-            await Clients.Caller.SendAsync("GetOnlineUsers", currentUsersOnline);
+            // Thay vì gửi mỗi String, gửi 1 object chứa cả ID và Tên
+            await Clients.Others.SendAsync("UserIsOnline", new { UserId = userIdString, FullName = myName, AvatarUrl = "" });
         }
+
+        var currentUsersOnline = await _tracker.GetOnlineUsers();
+
+        // 3. Map danh sách ID đang online thành Tên thật
+        var onlineGuidIds = currentUsersOnline.Select(id => Guid.Parse(id)).ToList();
+        var onlineUsersDb = await _userRepository.GetListAsync<User>(predicate: u => onlineGuidIds.Contains(u.Id));
+
+        var onlineUsersDto = onlineUsersDb.Select(u => new
+        {
+            UserId = u.Id.ToString(),
+            FullName = u.FullName,
+            AvatarUrl = ""
+        }).ToList();
+
+        await Clients.Caller.SendAsync("GetOnlineUsers", onlineUsersDto);
 
         await base.OnConnectedAsync();
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (userId != null)
-        {
-            // 1. Rút connection khỏi Redis
-            var isOffline = await _tracker.UserDisconnected(userId, Context.ConnectionId);
+        var userId = Context.User!.GetUserId().ToString();
+        // 1. Rút connection khỏi Redis
+        var isOffline = await _tracker.UserDisconnected(userId, Context.ConnectionId);
 
-            // 2. Nếu đã tắt hết tab/thiết bị -> Báo cho toàn hệ thống
-            if (isOffline)
-            {
-                await Clients.Others.SendAsync("UserIsOffline", userId);
-            }
+        // 2. Nếu đã tắt hết tab/thiết bị -> Báo cho toàn hệ thống
+        if (isOffline)
+        {
+            await Clients.Others.SendAsync("UserIsOffline", userId);
         }
 
         await base.OnDisconnectedAsync(exception);
@@ -67,11 +84,10 @@ public class ChatHub : Hub
     {
         if (string.IsNullOrWhiteSpace(content)) return;
 
-        var userIdString = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (!Guid.TryParse(userIdString, out var senderId)) return;
+        var userId = Context.User!.GetUserId();
 
         // 1. Gửi Command xuống Application
-        var command = new SendMessageCommand(conversationId, senderId, content);
+        var command = new SendMessageCommand(conversationId, userId, content);
 
         try
         {
@@ -87,6 +103,7 @@ public class ChatHub : Hub
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Error while sending message in Conversation {ConversationId} by User {UserId}", conversationId, userId);
             await Clients.Caller.SendAsync("ReceiveError", "An error occurred while sending the message.");
         }
     }
@@ -98,8 +115,7 @@ public class ChatHub : Hub
 
     public async Task NotifyTyping(Guid conversationId, bool isTyping)
     {
-        var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (userId == null) return;
+        var userId = Context.User!.GetUserId();
 
         // Bắn sự kiện "UserTyping" đến tất cả những người khác TRONG CÙNG PHÒNG CHAT
         await Clients.OthersInGroup(conversationId.ToString())
@@ -108,8 +124,7 @@ public class ChatHub : Hub
 
     public async Task MarkAsRead(Guid conversationId)
     {
-        var userIdString = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (!Guid.TryParse(userIdString, out var userId)) return;
+        var userId = Context.User!.GetUserId();
 
         // 1. Gửi Command xuống MongoDB để lưu trạng thái
         var command = new MarkMessagesAsReadCommand(conversationId, userId);

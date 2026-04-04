@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using ChatApp.Shared.Exceptions;
+using ChatApp.Shared.Extensions;
 using ChatApp.Shared.Wrappers;
 using ChatService.API.Hubs;
 using ChatService.Application.DTOs;
@@ -32,7 +33,8 @@ namespace ChatService.API.Controllers
         [HttpGet("{conversationId}/messages")]
         public async Task<IActionResult> GetMessages(Guid conversationId, [FromQuery] int limit = 50, [FromQuery] DateTime? before = null)
         {
-            var query = new GetMessagesQuery(conversationId, limit, before);
+            var currentUserId = User.GetUserId();
+            var query = new GetMessagesQuery(conversationId, currentUserId, limit, before);
             var resultDto = await _mediator.Send(query);
 
             var apiResponse = ApiResponse<IEnumerable<MessageDto>>.Ok(resultDto, "Messages retrieved successfully.");
@@ -44,8 +46,7 @@ namespace ChatService.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetUserConversations()
         {
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!Guid.TryParse(userIdString, out var userId)) return Unauthorized();
+            var userId = User.GetUserId();
 
             var query = new GetUserConversationsQuery(userId);
             var result = await _mediator.Send(query);
@@ -57,8 +58,7 @@ namespace ChatService.API.Controllers
         [HttpPost("private")]
         public async Task<IActionResult> CreateOrGetPrivateChat([FromBody] Guid targetUserId)
         {
-            var currentUserIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!Guid.TryParse(currentUserIdString, out var currentUserId)) return Unauthorized();
+            var currentUserId = User.GetUserId();
 
             if (targetUserId == currentUserId)
                 throw new BadRequestException("Cannot create a private chat with yourself.");
@@ -76,8 +76,7 @@ namespace ChatService.API.Controllers
         [HttpPost("group")]
         public async Task<IActionResult> CreateGroupChat([FromBody] CreateGroupChatRequest request)
         {
-            var currentUserIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!Guid.TryParse(currentUserIdString, out var currentUserId)) return Unauthorized();
+            var currentUserId = User.GetUserId();
 
             if (request.TargetUserIds == null || !request.TargetUserIds.Any())
                 throw new BadRequestException("Target users cannot be empty.");

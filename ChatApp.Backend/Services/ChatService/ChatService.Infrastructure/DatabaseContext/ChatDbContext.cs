@@ -10,6 +10,7 @@ namespace ChatService.Infrastructure.DatabaseContext
 
         public DbSet<Conversation> Conversations { get; set; } = null!;
         public DbSet<Participant> Participants { get; set; } = null!;
+        public DbSet<User> Users { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

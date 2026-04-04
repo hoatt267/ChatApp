@@ -2,6 +2,7 @@ using AutoMapper;
 using ChatApp.Shared.Exceptions;
 using ChatApp.Shared.Interfaces;
 using ChatService.Application.DTOs;
+using ChatService.Application.Interfaces;
 using ChatService.Domain.Entities;
 using MediatR;
 
@@ -10,12 +11,12 @@ namespace ChatService.Application.Features.Chats.Commands.CreateGroupChat
     public class CreateGroupChatCommandHandler : IRequestHandler<CreateGroupChatCommand, ConversationDto>
     {
         private readonly IRepository<Conversation> _conversationRepository;
-        private readonly IMapper _mapper;
+        private readonly IConversationEnricher _enricher;
 
-        public CreateGroupChatCommandHandler(IRepository<Conversation> conversationRepository, IMapper mapper)
+        public CreateGroupChatCommandHandler(IRepository<Conversation> conversationRepository, IConversationEnricher enricher)
         {
             _conversationRepository = conversationRepository;
-            _mapper = mapper;
+            _enricher = enricher;
         }
 
         public async Task<ConversationDto> Handle(CreateGroupChatCommand request, CancellationToken cancellationToken)
@@ -52,7 +53,7 @@ namespace ChatService.Application.Features.Chats.Commands.CreateGroupChat
             // 6. Lưu xuống Database
             await _conversationRepository.AddAsync(newGroup);
 
-            return _mapper.Map<ConversationDto>(newGroup);
+            return await _enricher.EnrichSingleAsync(newGroup);
         }
     }
 }

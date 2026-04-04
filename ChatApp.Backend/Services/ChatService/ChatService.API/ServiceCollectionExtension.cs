@@ -1,14 +1,16 @@
 using ChatApp.Shared.Interfaces;
 using ChatApp.Shared.Middlewares;
 using ChatApp.Shared.Repositories;
+using ChatService.Application.EventConsumers;
 using ChatService.Application.Features.Chats.Commands;
 using ChatService.Application.Interfaces;
-using ChatService.Application.Mappings;
+using ChatService.Application.Services;
 using ChatService.Infrastructure.DatabaseContext;
 using ChatService.Infrastructure.Presence;
 using ChatService.Infrastructure.Repositories;
 using ChatService.Infrastructure.Settings;
 using FluentValidation;
+using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -24,6 +26,13 @@ namespace ChatService.API
         public static void RegisterExtension(this WebApplicationBuilder builder)
         {
             RegisterInfrastructure(builder);
+            RegisterApplication(builder);
+        }
+
+        private static void RegisterApplication(WebApplicationBuilder builder)
+        {
+            // Đăng ký Enricher Service
+            builder.Services.AddScoped<IConversationEnricher, ConversationEnricher>();
         }
 
         private static void RegisterInfrastructure(WebApplicationBuilder builder)
@@ -50,6 +59,27 @@ namespace ChatService.API
                 .AddStackExchangeRedis(redisConnectionString, options =>
                 {
                     options.Configuration.ChannelPrefix = "ChatApp"; // Đặt tên prefix để không đụng hàng với app khác trong cùng Redis
+                });
+
+            //Register RabbitMQ - Consumer
+            builder.Services.AddMassTransit(x =>
+                {
+                    // 1. ĐĂNG KÝ CONSUMER
+                    x.AddConsumer<UserCreatedEventConsumer>();
+
+                    // 2. CẤU HÌNH KẾT NỐI RABBITMQ
+                    x.UsingRabbitMq((context, cfg) =>
+                    {
+                        cfg.Host("localhost", "/", h =>
+                        {
+                            h.Username("guest");
+                            h.Password("guest");
+                        });
+
+                        // Lệnh này cực kỳ quan trọng: Nó tự động rà soát các Consumer bạn đã đăng ký
+                        // và tự động tạo Queue trên RabbitMQ, sau đó liên kết (Bind) Queue đó với Exchange!
+                        cfg.ConfigureEndpoints(context);
+                    });
                 });
             // ==========================================
 
@@ -100,10 +130,10 @@ namespace ChatService.API
             builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
             // Đăng ký AutoMapper (quét profile trong tầng Application)
-            builder.Services.AddAutoMapper(cfg =>
-            {
-                cfg.AddMaps(typeof(ChatMappingProfile).Assembly);
-            });
+            // builder.Services.AddAutoMapper(cfg =>
+            // {
+            //     cfg.AddMaps(typeof(ChatMappingProfile).Assembly);
+            // });
 
             // Đăng ký MediatR (quét command trong tầng Application)
             builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(SendMessageCommand).Assembly));
