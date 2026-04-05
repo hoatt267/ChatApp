@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MassTransit;
+using ChatApp.Shared.Services;
 
 namespace IdentityService.API
 {
@@ -20,6 +21,13 @@ namespace IdentityService.API
         public static void RegisterExtension(this WebApplicationBuilder builder)
         {
             RegisterInfrastructure(builder);
+            RegisterApplication(builder);
+        }
+
+        private static void RegisterApplication(WebApplicationBuilder builder)
+        {
+            // Đăng ký Blob Storage Service
+            builder.Services.AddScoped<IBlobStorageService, AzureBlobStorageService>();
         }
 
         private static void RegisterInfrastructure(WebApplicationBuilder builder)

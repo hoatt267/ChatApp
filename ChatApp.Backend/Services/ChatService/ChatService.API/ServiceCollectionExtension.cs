@@ -1,6 +1,7 @@
 using ChatApp.Shared.Interfaces;
 using ChatApp.Shared.Middlewares;
 using ChatApp.Shared.Repositories;
+using ChatApp.Shared.Services;
 using ChatService.Application.EventConsumers;
 using ChatService.Application.Features.Chats.Commands;
 using ChatService.Application.Interfaces;
@@ -33,6 +34,9 @@ namespace ChatService.API
         {
             // Đăng ký Enricher Service
             builder.Services.AddScoped<IConversationEnricher, ConversationEnricher>();
+
+            // Đăng ký Blob Storage Service
+            builder.Services.AddScoped<IBlobStorageService, AzureBlobStorageService>();
         }
 
         private static void RegisterInfrastructure(WebApplicationBuilder builder)
@@ -66,6 +70,7 @@ namespace ChatService.API
                 {
                     // 1. ĐĂNG KÝ CONSUMER
                     x.AddConsumer<UserCreatedEventConsumer>();
+                    x.AddConsumer<UserUpdatedEventConsumer>();
 
                     // 2. CẤU HÌNH KẾT NỐI RABBITMQ
                     x.UsingRabbitMq((context, cfg) =>

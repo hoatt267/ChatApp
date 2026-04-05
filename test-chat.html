@@ -392,8 +392,11 @@
             String(currentUserId).toLowerCase()
               ? " (Tôi)"
               : "";
-          // Hiển thị tên thật luôn!
-          list.innerHTML += `<li>👤 <strong>${u.fullName}</strong>${isMe}</li>`;
+          const avatarHtml = u.avatarUrl
+            ? `<img src="${u.avatarUrl}" style="width:20px; height:20px; border-radius:50%; vertical-align:middle; object-fit:cover; margin-right:5px;">`
+            : `👤 `;
+
+          list.innerHTML += `<li style="margin-bottom: 5px;">${avatarHtml}<strong>${u.fullName}</strong>${isMe}</li>`;
         });
       }
 
@@ -420,10 +423,12 @@
             div.className = "conversation-item";
             div.id = `conv-${conv.id}`;
 
-            // THAY ĐỔI LOGIC HIỂN THỊ TÊN TẠI ĐÂY:
             let displayTitle = "";
+            let avatarHtml = "";
+
             if (conv.isGroup) {
-              displayTitle = `👥 ${conv.title}`;
+              displayTitle = conv.title;
+              avatarHtml = `👥 `; // Mặc định dùng icon nhóm
             } else {
               // Với chat 1-1, tìm cái người tham gia KHÁC với ID của chính mình
               const otherPerson = conv.participants.find(
@@ -432,15 +437,23 @@
                   String(currentUserId).toLowerCase(),
               );
 
-              // Nếu tìm thấy thì lấy Tên, không thì hiển thị mặc định
-              const otherName = otherPerson
+              // Lấy tên
+              displayTitle = otherPerson
                 ? otherPerson.fullName
-                : "Anonymous User";
-              displayTitle = `👤 ${otherName}`;
+                : "Người dùng ẩn danh";
+
+              // Lấy Avatar
+              if (otherPerson && otherPerson.avatarUrl) {
+                avatarHtml = `<img src="${otherPerson.avatarUrl}" style="width:24px; height:24px; border-radius:50%; vertical-align:middle; object-fit:cover; margin-right:8px;">`;
+              } else {
+                avatarHtml = `👤 `;
+              }
             }
 
-            div.innerText = displayTitle;
+            // Dùng innerHTML thay vì innerText để render được thẻ <img>
+            div.innerHTML = `<div style="display: flex; align-items: center;">${avatarHtml} <span>${displayTitle}</span></div>`;
             div.onclick = () => switchConversation(conv.id, displayTitle);
+
             list.appendChild(div);
           });
         } catch (err) {
@@ -632,7 +645,14 @@
         div.className = `msg ${isMyMsg ? "my-msg" : ""}`;
 
         const timeStr = new Date(msg.createdAt).toLocaleTimeString();
-        const prefix = isMyMsg ? "TÔI" : msg.senderName;
+
+        // XỬ LÝ AVATAR TRONG KHUNG CHAT
+        let avatarHtml = isMyMsg ? "" : "👤 "; // Mặc định
+        if (!isMyMsg && msg.senderAvatarUrl) {
+          avatarHtml = `<img src="${msg.senderAvatarUrl}" style="width:24px; height:24px; border-radius:50%; vertical-align:middle; object-fit:cover; margin-right:5px;">`;
+        }
+
+        const prefix = isMyMsg ? "TÔI" : `${avatarHtml}${msg.senderName}`;
 
         let html = `<strong>${prefix}</strong>: ${msg.content} <br><span class="time">${timeStr}</span>`;
 

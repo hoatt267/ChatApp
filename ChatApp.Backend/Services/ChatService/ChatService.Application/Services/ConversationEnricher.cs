@@ -22,7 +22,7 @@ namespace ChatService.Application.Services
             // Gom ID và lấy Tên
             var userIds = conversations.SelectMany(c => c.Participants.Select(p => p.UserId)).ToHashSet();
             var users = await _userRepository.GetListAsync<User>(predicate: u => userIds.Contains(u.Id));
-            var userDictionary = users.ToDictionary(u => u.Id, u => u.FullName);
+            var userDictionary = users.ToDictionary(u => u.Id);
 
             // Map ra DTO
             return conversations.Select(c => new ConversationDto(
@@ -30,10 +30,15 @@ namespace ChatService.Application.Services
                 c.Title,
                 c.IsGroup,
                 c.CreatedAt,
-                c.Participants.Select(p => new ParticipantDto(
-                    p.UserId,
-                    userDictionary.TryGetValue(p.UserId, out var name) ? name : "Anonymous User"
-                ))
+                c.Participants.Select(p =>
+                {
+                    var userFound = userDictionary.TryGetValue(p.UserId, out var user);
+                    return new ParticipantDto(
+                        p.UserId,
+                        userFound ? user!.FullName : "Anonymous User",
+                        userFound ? (user!.AvatarUrl ?? "") : ""
+                    );
+                })
             ));
         }
 
@@ -53,19 +58,23 @@ namespace ChatService.Application.Services
 
             // 2. Query bảng User để lấy tên
             var users = await _userRepository.GetListAsync<User>(predicate: u => senderIds.Contains(u.Id));
-            var userDictionary = users.ToDictionary(u => u.Id, u => u.FullName);
+            var userDictionary = users.ToDictionary(u => u.Id);
 
             // 3. Map bằng tay ra DTO
-            return messages.Select(m => new MessageDto(
-                m.Id,
-                m.SenderId,
-                userDictionary.TryGetValue(m.SenderId, out var name) ? name : "Người dùng ẩn danh",
-                "", // SenderAvatarUrl
-                m.ConversationId,
-                m.Content,
-                m.CreatedAt,
-                m.ReadBy
-            ));
+            return messages.Select(m =>
+            {
+                var userFound = userDictionary.TryGetValue(m.SenderId, out var user);
+                return new MessageDto(
+                    m.Id,
+                    m.SenderId,
+                    userFound ? user!.FullName : "Người dùng ẩn danh",
+                    userFound ? (user!.AvatarUrl ?? "") : "",
+                    m.ConversationId,
+                    m.Content,
+                    m.CreatedAt,
+                    m.ReadBy
+                );
+            });
         }
     }
 }
