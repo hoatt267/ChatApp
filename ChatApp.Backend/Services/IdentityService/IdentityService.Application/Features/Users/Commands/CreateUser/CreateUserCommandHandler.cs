@@ -56,7 +56,8 @@ namespace IdentityService.Application.Features.Users.Commands.CreateUser
             {
                 UserId = user.Id,
                 Email = user.Email,
-                FullName = user.FullName
+                FullName = user.FullName,
+                AvatarUrl = user.AvatarUrl
             };
 
             await _publishEndpoint.Publish(userCreateEvent, cancellationToken);

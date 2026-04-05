@@ -40,11 +40,12 @@ public class ChatHub : Hub
         // 2. Lấy tên của chính người vừa đăng nhập
         var me = await _userRepository.GetAsync<User>(predicate: u => u.Id == userId);
         var myName = me != null ? me.FullName : "Anonymous";
+        var myAvatar = me != null ? (me.AvatarUrl ?? "") : "";
 
         if (isFirstConnection)
         {
             // Thay vì gửi mỗi String, gửi 1 object chứa cả ID và Tên
-            await Clients.Others.SendAsync("UserIsOnline", new { UserId = userIdString, FullName = myName, AvatarUrl = "" });
+            await Clients.Others.SendAsync("UserIsOnline", new { UserId = userIdString, FullName = myName, AvatarUrl = myAvatar });
         }
 
         var currentUsersOnline = await _tracker.GetOnlineUsers();
@@ -57,7 +58,7 @@ public class ChatHub : Hub
         {
             UserId = u.Id.ToString(),
             FullName = u.FullName,
-            AvatarUrl = ""
+            AvatarUrl = u.AvatarUrl ?? "",
         }).ToList();
 
         await Clients.Caller.SendAsync("GetOnlineUsers", onlineUsersDto);
