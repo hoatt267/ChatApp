@@ -72,7 +72,10 @@ namespace ChatService.Application.Services
                     m.ConversationId,
                     m.Content,
                     m.CreatedAt,
-                    m.ReadBy
+                    m.ReadBy,
+                    m.Type,
+                    m.FileUrl,
+                    m.FileName
                 );
             });
         }

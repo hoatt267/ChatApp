@@ -29,7 +29,14 @@ namespace ChatService.Application.Features.Chats.Commands
                 throw new NotFoundException(nameof(Conversation), request.ConversationId);
             }
 
-            var message = new Message(request.ConversationId, request.SenderId, request.Content);
+            var message = new Message(
+                request.ConversationId,
+                request.SenderId,
+                request.Content,
+                request.Type,
+                request.FileUrl,
+                request.FileName
+            );
             await _messageRepository.AddAsync(message);
 
             var enrichedMessages = await _enricher.EnrichMessagesAsync(new List<Message> { message });

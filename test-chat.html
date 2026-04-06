@@ -229,15 +229,49 @@
           <div id="messagesList"></div>
         </div>
 
-        <div class="controls">
+        <div style="display: flex; gap: 10px; margin-top: 10px">
+          <input
+            type="file"
+            id="fileInput"
+            style="display: none"
+            onchange="uploadMediaFile(this)"
+          />
+
+          <button
+            onclick="document.getElementById('fileInput').click()"
+            style="
+              background: #6c757d;
+              color: white;
+              border: none;
+              padding: 10px;
+              border-radius: 4px;
+              cursor: pointer;
+            "
+            title="Gửi File/Ảnh"
+          >
+            📎
+          </button>
+
           <input
             type="text"
-            id="messageInput"
+            id="msgInput"
             placeholder="Nhập tin nhắn..."
-            oninput="handleTyping()"
-            disabled
+            style="flex: 1; padding: 10px"
           />
-          <button id="sendBtn" onclick="sendMessage()" disabled>Gửi tin</button>
+
+          <button
+            onclick="sendMessage()"
+            style="
+              background: #0d6efd;
+              color: white;
+              border: none;
+              padding: 10px 20px;
+              border-radius: 4px;
+              cursor: pointer;
+            "
+          >
+            Gửi tin
+          </button>
         </div>
       </div>
     </div>
@@ -542,8 +576,8 @@
       async function switchConversation(conversationId, title) {
         currentConversationId = conversationId;
         document.getElementById("chatTitle").innerText = `Phòng Chat: ${title}`;
-        document.getElementById("messageInput").disabled = false;
-        document.getElementById("sendBtn").disabled = false;
+        const msgInput = document.getElementById("msgInput");
+        if (msgInput) msgInput.disabled = false;
         document.getElementById("messagesList").innerHTML = ""; // Xóa tin nhắn phòng cũ
         oldestMessageTimestamp = null;
 
@@ -609,7 +643,7 @@
       // 4. GỬI VÀ RENDER TIN NHẮN
       // ==========================================
       async function sendMessage() {
-        const content = document.getElementById("messageInput").value;
+        const content = document.getElementById("msgInput").value;
         if (connection && content && currentConversationId) {
           try {
             await connection.invoke(
@@ -619,7 +653,7 @@
             );
 
             // 1. Xóa trắng ô input
-            document.getElementById("messageInput").value = "";
+            document.getElementById("msgInput").value = "";
 
             // 2. FIX UX ĐANG GÕ: Tắt ngay lập tức hẹn giờ và báo cho Server là "Tôi gõ xong rồi"
             isTyping = false;
@@ -654,7 +688,30 @@
 
         const prefix = isMyMsg ? "TÔI" : `${avatarHtml}${msg.senderName}`;
 
-        let html = `<strong>${prefix}</strong>: ${msg.content} <br><span class="time">${timeStr}</span>`;
+        // ==========================================
+        // 2. XỬ LÝ RENDER MEDIA (ẢNH, VIDEO, FILE)
+        // ==========================================
+        let contentHtml = "";
+
+        // msg.type == 1 (Image)
+        if (msg.type === 1 || msg.type === "Image") {
+          contentHtml = `<br><img src="${msg.fileUrl}" style="max-width: 250px; border-radius: 8px; margin-top: 8px; cursor: pointer; border: 1px solid #ccc;" onclick="window.open('${msg.fileUrl}', '_blank')" title="Nhấn để xem ảnh gốc">`;
+        }
+        // msg.type == 2 (Video)
+        else if (msg.type === 2 || msg.type === "Video") {
+          contentHtml = `<br><video src="${msg.fileUrl}" controls style="max-width: 250px; border-radius: 8px; margin-top: 8px;"></video>`;
+        }
+        // msg.type == 4 (Document) hoặc có fileUrl mà không phải ảnh/video
+        else if (msg.type === 4 || msg.type === "Document" || msg.fileUrl) {
+          contentHtml = `<br><a href="${msg.fileUrl}" target="_blank" style="display: inline-block; padding: 8px 12px; background: #e9ecef; border-radius: 5px; text-decoration: none; color: #0d6efd; margin-top: 8px; font-weight: 500; border: 1px solid #dee2e6;">📎 ${msg.fileName || "Tải tài liệu xuống"}</a>`;
+        }
+        // msg.type == 0 (Text bình thường)
+        else {
+          contentHtml = msg.content;
+        }
+
+        // Ráp nội dung vào HTML
+        let html = `<strong>${prefix}</strong>: ${contentHtml} <br><span class="time">${timeStr}</span>`;
 
         if (isMyMsg) {
           let readText = "";
@@ -678,6 +735,63 @@
       function renderSingleMessage(msg) {
         const list = document.getElementById("messagesList");
         list.appendChild(createMessageHtml(msg));
+      }
+
+      async function uploadMediaFile(inputElement) {
+        const file = inputElement.files[0];
+        if (!file) return;
+
+        if (!currentConversationId) {
+          alert("Vui lòng chọn một phòng chat trước khi gửi file!");
+          inputElement.value = ""; // Reset input
+          return;
+        }
+
+        // Kiểm tra dung lượng sương sương ở Frontend (25MB)
+        if (file.size > 25 * 1024 * 1024) {
+          alert("File quá lớn! Vui lòng chọn file dưới 25MB.");
+          inputElement.value = "";
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+          // Báo cho user biết đang tải file
+          const msgInput = document.getElementById("msgInput");
+          const oldPlaceholder = msgInput.placeholder;
+          msgInput.placeholder = "Đang tải file lên...";
+          msgInput.disabled = true;
+
+          const response = await fetch(
+            `http://localhost:5000/api/Conversations/${currentConversationId}/messages/media`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`, // Dùng token đã login
+              },
+              body: formData,
+            },
+          );
+
+          const json = await response.json();
+          if (!response.ok) {
+            alert("Lỗi upload: " + (json.message || "Unknown error"));
+          } else {
+            console.log("Upload thành công:", json);
+            // File upload thành công, API sẽ tự động gọi SignalR báo cho cả phòng.
+            // Chúng ta không cần tự chèn vào UI vì hàm connection.on("ReceiveMessage") sẽ tự bắt được và vẽ ra!
+          }
+        } catch (error) {
+          console.error("Lỗi khi upload:", error);
+          alert("Có lỗi xảy ra khi upload file!");
+        } finally {
+          // Phục hồi lại ô nhập text
+          inputElement.value = "";
+          document.getElementById("msgInput").placeholder = oldPlaceholder;
+          document.getElementById("msgInput").disabled = false;
+        }
       }
 
       // Typing debounce

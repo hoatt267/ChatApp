@@ -1,4 +1,5 @@
 using AutoMapper;
+using ChatApp.Shared.Exceptions;
 using ChatApp.Shared.Interfaces;
 using ChatService.Application.DTOs;
 using ChatService.Application.DTOs.Responses;
@@ -12,16 +13,24 @@ namespace ChatService.Application.Features.Chats.Commands.CreatePrivateChat
     public class CreatePrivateChatCommandHandler : IRequestHandler<CreatePrivateChatCommand, ConversationDto>
     {
         private readonly IRepository<Conversation> _conversationRepository;
+        private readonly IRepository<User> _userRepository;
         private readonly IConversationEnricher _enricher;
 
-        public CreatePrivateChatCommandHandler(IRepository<Conversation> conversationRepository, IConversationEnricher enricher)
+        public CreatePrivateChatCommandHandler(IRepository<Conversation> conversationRepository, IRepository<User> userRepository, IConversationEnricher enricher)
         {
             _conversationRepository = conversationRepository;
+            _userRepository = userRepository;
             _enricher = enricher;
         }
 
         public async Task<ConversationDto> Handle(CreatePrivateChatCommand request, CancellationToken cancellationToken)
         {
+            var isExistingUser = await _userRepository.ExistsAsync(u => u.Id == request.TargetUserId);
+            if (!isExistingUser)
+            {
+                throw new NotFoundException(nameof(User), request.TargetUserId);
+            }
+
             var existingChat = await _conversationRepository.GetAsync<Conversation>(
                 predicate: c => !c.IsGroup &&
                                 c.Participants.Any(p => p.UserId == request.CurrentUserId) &&
@@ -29,7 +38,7 @@ namespace ChatService.Application.Features.Chats.Commands.CreatePrivateChat
                 include: q => q.Include(c => c.Participants)
             );
 
-            Conversation conversationToReturn = existingChat;
+            Conversation? conversationToReturn = existingChat;
 
             // Nếu chưa có, tạo mới và lưu xuống DB
             if (conversationToReturn == null)
