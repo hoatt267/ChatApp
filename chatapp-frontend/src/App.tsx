@@ -1,5 +1,6 @@
-function App() {
-  return <div className="text-3xl font-bold text-blue-500">Hello ChatApp</div>;
-}
+import { RouterProvider } from "react-router-dom";
+import { router } from "./routes";
 
-export default App;
+export default function App() {
+  return <RouterProvider router={router} />;
+}
