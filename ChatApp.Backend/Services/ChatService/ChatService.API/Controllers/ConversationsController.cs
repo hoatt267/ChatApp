@@ -7,6 +7,7 @@ using ChatService.Application.DTOs;
 using ChatService.Application.DTOs.Requests;
 using ChatService.Application.Features.Chats.Commands.CreateGroupChat;
 using ChatService.Application.Features.Chats.Commands.CreatePrivateChat;
+using ChatService.Application.Features.Chats.Commands.UploadMessageMedia;
 using ChatService.Application.Features.Chats.Queries;
 using ChatService.Application.Features.Chats.Queries.GetUserConversations;
 using MediatR;
@@ -38,6 +39,30 @@ namespace ChatService.API.Controllers
             var resultDto = await _mediator.Send(query);
 
             var apiResponse = ApiResponse<IEnumerable<MessageDto>>.Ok(resultDto, "Messages retrieved successfully.");
+
+            return Ok(apiResponse);
+        }
+
+        [HttpPost("{conversationId}/messages/media")]
+        public async Task<IActionResult> UploadMediaMessage([FromRoute] Guid conversationId, [FromForm] IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                throw new BadRequestException("No file uploaded.");
+
+            if (file.Length > 25 * 1024 * 1024)
+                throw new BadRequestException("File size exceeds 25MB limit.");
+
+            var currentUserId = User.GetUserId();
+
+            // Thực thi Command
+            using var stream = file.OpenReadStream();
+            var command = new UploadMessageMediaCommand(conversationId, currentUserId, stream, file.FileName, file.ContentType);
+
+            var resultDto = await _mediator.Send(command);
+
+            var apiResponse = ApiResponse<MessageDto>.Ok(resultDto, "Media message sent successfully.");
+
+            await _chatHubContext.Clients.Group(conversationId.ToString()).SendAsync("ReceiveMessage", apiResponse);
 
             return Ok(apiResponse);
         }

@@ -1,0 +1,30 @@
+// TODO: Validate TargetUserId via replicated User table (RabbitMQ) - CreatePrivateChatCommandHandler
+
+📦 src
+ ┣ 📂 assets          # Hình ảnh, icon, font chữ
+ ┣ 📂 components      # UI Components dùng chung toàn app (Button, Input, Modal, Spinner...)
+ ┣ 📂 config          # Cấu hình môi trường, hằng số (API_URL, SIGNALR_URL...)
+ ┣ 📂 features        # 🌟 TRÁI TIM CỦA APP: Chia theo từng nghiệp vụ
+ ┃ ┣ 📂 auth          # Nghiệp vụ: Đăng nhập, Đăng ký, Quên mật khẩu
+ ┃ ┃ ┣ 📂 components  # (FormLogin, FormRegister...)
+ ┃ ┃ ┣ 📂 services    # (Gọi API login, register, refresh token...)
+ ┃ ┃ ┗ 📂 store       # (Lưu state của Auth: isAuth, currentToken...)
+ ┃ ┣ 📂 chat          # Nghiệp vụ: Khung chat, Tin nhắn, Danh bạ
+ ┃ ┃ ┣ 📂 components  # (ChatBox, MessageItem, Sidebar...)
+ ┃ ┃ ┣ 📂 services    # (Gọi API GetMessages, GetConversations...)
+ ┃ ┃ ┗ 📂 store       # (Lưu state của Chat: activeConversation, messages...)
+ ┃ ┗ 📂 profile       # Nghiệp vụ: Cập nhật Avatar, Đổi tên...
+ ┣ 📂 hooks           # Custom Hooks dùng chung (useAuth, useDebounce...)
+ ┣ 📂 layouts         # Layouts bọc ngoài trang (AuthLayout, MainChatLayout...)
+ ┣ 📂 lib             # Cấu hình các thư viện bên thứ 3 (AxiosClient, SignalRService...)
+ ┣ 📂 routes          # Định nghĩa cấu trúc định tuyến (Protected Routes)
+ ┣ 📜 App.tsx         # Component gốc
+ ┗ 📜 main.tsx        # Entry point
+
+4. Tiến thẳng đến DevOps (Docker Compose)
+
+Nếu bạn cảm thấy tính năng code thế là đủ xài rồi: Chúng ta sẽ dừng code tính năng mới, bắt tay vào viết Dockerfile cho từng project, viết docker-compose.yml để chạy một phát lên luôn cả Postgres, Mongo, Redis, Gateway, Identity, và Chat.
+
+Ở môi trường Production thực tế, người ta sẽ khắc phục vụ này bằng cách gắn thời gian sống (TTL) cho Key trong Redis, kết hợp cơ chế gửi Ping/Pong liên tục để xác nhận user còn sống. Nhưng với MVP hiện tại, chúng ta không cần làm phức tạp hóa vấn đề)
+
+=========================================================================================================
