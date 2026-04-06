@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ChatApp.Shared.Extensions;
 using IdentityService.Application.Features.Users.Commands.UploadAvatar;
+using IdentityService.Application.Features.Users.Queries.GetUserById;
 
 namespace IdentityService.API.Controllers;
 
@@ -81,21 +82,11 @@ public class UsersController : ControllerBase
 
     [Authorize]
     [HttpGet("me")]
-    public IActionResult GetMyProfile()
+    public async Task<IActionResult> GetMyProfile()
     {
-        // Trích xuất thông tin từ chính cái vé Access Token mà user gửi lên
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var email = User.FindFirst(ClaimTypes.Email)?.Value;
-        var fullName = User.FindFirst(ClaimTypes.Name)?.Value;
-        var role = User.FindFirst(ClaimTypes.Role)?.Value;
-
-        var userProfile = new
-        {
-            Id = userId,
-            Email = email,
-            FullName = fullName,
-            Role = role
-        };
+        var userId = User.GetUserId();
+        var query = new GetUserByIdQuery(userId);
+        var userProfile = await _mediator.Send(query);
 
         return Ok(ApiResponse<object>.Ok(userProfile, "Profile retrieved successfully."));
     }

@@ -4,6 +4,7 @@ import Login from "../features/auth/components/Login/Login";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicRoute from "./PublicRoute";
 import Register from "../features/auth/components/Register/Register";
+import MainLayout from "../layouts/MainLayout";
 
 export const router = createBrowserRouter([
   {
@@ -23,16 +24,30 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    // Route cha (Bọc bằng ProtectedRoute để bảo vệ)
     path: "/",
     element: (
       <ProtectedRoute>
-        <div className="min-h-screen flex items-center justify-center bg-green-50">
-          <h1 className="text-3xl font-bold text-green-600">
-            Đăng nhập thành công! Chào mừng đến ChatApp
-          </h1>
-        </div>
+        <MainLayout />
       </ProtectedRoute>
     ),
+    // Route con: Nội dung sẽ được hiển thị vào chỗ <Outlet /> của MainLayout
+    children: [
+      {
+        index: true, // Khi mới vào trang chủ, chưa chọn ai để chat
+        element: (
+          <div className="flex-1 flex items-center justify-center text-gray-500 bg-gray-50">
+            <div className="text-center">
+              <h2 className="text-2xl font-semibold mb-2">
+                Chào mừng đến với ChatApp
+              </h2>
+              <p>Hãy chọn một đoạn chat hoặc bắt đầu cuộc trò chuyện mới</p>
+            </div>
+          </div>
+        ),
+      },
+      // Sau này chúng ta sẽ thêm route: { path: "chat/:conversationId", element: <ChatRoom /> } ở đây
+    ],
   },
   {
     path: "*",
