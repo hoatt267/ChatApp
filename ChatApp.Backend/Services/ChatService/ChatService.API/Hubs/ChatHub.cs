@@ -51,7 +51,11 @@ public class ChatHub : Hub
         var currentUsersOnline = await _tracker.GetOnlineUsers();
 
         // 3. Map danh sách ID đang online thành Tên thật
-        var onlineGuidIds = currentUsersOnline.Select(id => Guid.Parse(id)).ToList();
+        var onlineGuidIds = currentUsersOnline
+            .Where(id => Guid.TryParse(id, out _))
+            .Select(Guid.Parse)
+            .ToList();
+
         var onlineUsersDb = await _userRepository.GetListAsync<User>(predicate: u => onlineGuidIds.Contains(u.Id));
 
         var onlineUsersDto = onlineUsersDb.Select(u => new

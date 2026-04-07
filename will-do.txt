@@ -1,5 +1,3 @@
-// TODO: Validate TargetUserId via replicated User table (RabbitMQ) - CreatePrivateChatCommandHandler
-
 📦 src
  ┣ 📂 assets          # Hình ảnh, icon, font chữ
  ┣ 📂 components      # UI Components dùng chung toàn app (Button, Input, Modal, Spinner...)
