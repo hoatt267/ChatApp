@@ -15,6 +15,12 @@ app.UseExceptionHandler();
 app.UseAuthentication();
 app.UseAuthorization();
 
+using (var scope = app.Services.CreateScope())
+{
+    var redis = scope.ServiceProvider.GetRequiredService<StackExchange.Redis.IConnectionMultiplexer>();
+    redis.GetDatabase().KeyDelete("chat_presence");
+}
+
 app.MapHub<ChatHub>("/chatHub");
 
 app.MapControllers();
