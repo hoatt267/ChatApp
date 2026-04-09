@@ -10,6 +10,7 @@ export interface Conversation {
   isGroup: boolean;
   createdAt: string;
   participants: Participant[];
+  lastMessage?: Message;
 }
 
 export const MessageType = {

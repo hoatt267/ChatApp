@@ -3,6 +3,7 @@ using ChatService.Application.DTOs;
 using ChatService.Application.DTOs.Responses;
 using ChatService.Application.Interfaces;
 using ChatService.Domain.Entities;
+using ChatService.Domain.Enums;
 
 namespace ChatService.Application.Services
 {
@@ -17,29 +18,60 @@ namespace ChatService.Application.Services
 
         public async Task<IEnumerable<ConversationDto>> EnrichListAsync(IEnumerable<Conversation> conversations)
         {
-            if (!conversations.Any()) return new List<ConversationDto>();
+            var conversationList = conversations.ToList();
+            if (!conversationList.Any()) return new List<ConversationDto>();
 
-            // Gom ID và lấy Tên
-            var userIds = conversations.SelectMany(c => c.Participants.Select(p => p.UserId)).ToHashSet();
+            // 1. Lấy tất cả User (Gom ID 1 lần duy nhất)
+            var userIds = conversationList.SelectMany(c => c.Participants.Select(p => p.UserId)).ToHashSet();
+
+            // Đảm bảo lấy luôn cả người gửi tin nhắn cuối (đề phòng họ đã thoát group)
+            var senderIds = conversationList.Where(c => c.LastMessageSenderId.HasValue).Select(c => c.LastMessageSenderId!.Value);
+            userIds.UnionWith(senderIds);
+
             var users = await _userRepository.GetListAsync<User>(predicate: u => userIds.Contains(u.Id));
             var userDictionary = users.ToDictionary(u => u.Id);
 
-            // Map ra DTO
-            return conversations.Select(c => new ConversationDto(
-                c.Id,
-                c.Title,
-                c.IsGroup,
-                c.CreatedAt,
-                c.Participants.Select(p =>
+            return conversationList.Select(c =>
+            {
+                MessageDto? lastMessageDto = null;
+
+                if (c.LastMessageSenderId.HasValue && c.LastMessageCreatedAt.HasValue)
                 {
-                    var userFound = userDictionary.TryGetValue(p.UserId, out var user);
-                    return new ParticipantDto(
-                        p.UserId,
-                        userFound ? user!.FullName : "Anonymous User",
-                        userFound ? (user!.AvatarUrl ?? "") : ""
+                    var senderFound = userDictionary.TryGetValue(c.LastMessageSenderId.Value, out var sender);
+
+                    lastMessageDto = new MessageDto(
+                        Guid.Empty,
+                        c.LastMessageSenderId.Value,
+                        senderFound ? sender!.FullName : "Người dùng ẩn danh",
+                        senderFound ? (sender!.AvatarUrl ?? "") : "",
+                        c.Id,
+                        c.LastMessageContent ?? "",
+                        c.LastMessageCreatedAt.Value,
+                        new List<Guid>(),
+                        MessageType.Text,
+                        null,
+                        null
                     );
-                })
-            ));
+                }
+
+                return new ConversationDto(
+                    c.Id,
+                    c.Title,
+                    c.IsGroup,
+                    c.CreatedAt,
+                    c.Participants.Select(p =>
+                    {
+                        var userFound = userDictionary.TryGetValue(p.UserId, out var user);
+                        return new ParticipantDto(
+                            p.UserId,
+                            userFound ? user!.FullName : "Người dùng ẩn danh",
+                            userFound ? (user!.AvatarUrl ?? "") : ""
+                        );
+                    }),
+                    lastMessageDto
+                );
+            }).OrderByDescending(c => c.LastMessage?.CreatedAt ?? c.CreatedAt) // Sắp xếp theo tin nhắn cuối nếu có
+              .ToList();
         }
 
         public async Task<ConversationDto> EnrichSingleAsync(Conversation conversation)

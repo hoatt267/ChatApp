@@ -15,6 +15,8 @@ interface ChatState {
 
   connect: () => void;
   disconnect: () => void;
+
+  typingUsers: Record<string, string[]>;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -79,6 +81,26 @@ export const useChatStore = create<ChatState>((set, get) => ({
         console.error("🔴 LỖI KẾT NỐI SIGNALR:", err);
         set({ connection: null });
       });
+
+    // Lắng nghe sự kiện "UserTyping" để cập nhật trạng thái gõ chữ của người dùng
+    newConnection.on(
+      "UserTyping",
+      (conversationId: string, userId: string, isTyping: boolean) => {
+        set((state) => {
+          const currentTyping = state.typingUsers[conversationId] || [];
+          const newTyping = isTyping
+            ? [...new Set([...currentTyping, userId])]
+            : currentTyping.filter((id) => id !== userId);
+
+          return {
+            typingUsers: {
+              ...state.typingUsers,
+              [conversationId]: newTyping,
+            },
+          };
+        });
+      },
+    );
   },
 
   disconnect: () => {
@@ -89,4 +111,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
       console.log("⚪ ĐÃ NGẮT KẾT NỐI SIGNALR");
     }
   },
+
+  typingUsers: {},
 }));
