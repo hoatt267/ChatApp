@@ -4,6 +4,7 @@ using ChatApp.Shared.Interfaces;
 using ChatService.Application.DTOs;
 using ChatService.Application.Interfaces;
 using ChatService.Domain.Entities;
+using ChatService.Domain.Enums;
 using MediatR;
 
 namespace ChatService.Application.Features.Chats.Commands
@@ -38,6 +39,11 @@ namespace ChatService.Application.Features.Chats.Commands
                 request.FileName
             );
             await _messageRepository.AddAsync(message);
+
+            // Add last message info vào Conversation để tiện cho việc hiển thị danh sách cuộc trò chuyện
+            var displayContent = request.Type == MessageType.Text ? request.Content : $"Đã gửi một tệp";
+            conversation.UpdateLastMessage(displayContent, message.SenderId, message.CreatedAt);
+            await _conversationRepository.SaveChangesAsync();
 
             var enrichedMessages = await _enricher.EnrichMessagesAsync(new List<Message> { message });
             return enrichedMessages.First();

@@ -26,3 +26,8 @@ Nếu bạn cảm thấy tính năng code thế là đủ xài rồi: Chúng ta 
 Ở môi trường Production thực tế, người ta sẽ khắc phục vụ này bằng cách gắn thời gian sống (TTL) cho Key trong Redis, kết hợp cơ chế gửi Ping/Pong liên tục để xác nhận user còn sống. Nhưng với MVP hiện tại, chúng ta không cần làm phức tạp hóa vấn đề)
 
 =========================================================================================================
+
+chưa nhắn gì nhưng vẫn lưu conversation
+chưa có đã đọc, bấm vào tin nhắn thì phải đã đọc và ko bôi đậm bên conversation nữa
+chưa có gửi file
+chưa có tạo group chat

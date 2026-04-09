@@ -5,25 +5,19 @@ import { useAuthStore } from "../../../features/auth/store/useAuthStore";
 import { useChatStore } from "../../../features/chat/store/useChatStore";
 import type { Conversation, Message } from "../../../features/chat/types";
 
-// 🌟 1. MỞ RỘNG KIỂU DỮ LIỆU ĐỂ LƯU THÊM TIN NHẮN CUỐI
-type ChatItem = Conversation & {
-  lastMessageContent?: string;
-};
-
 export default function RecentChats() {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const connection = useChatStore((state) => state.connection);
 
-  const [conversations, setConversations] = useState<ChatItem[]>([]);
+  // Không cần ChatItem nữa, dùng thẳng Conversation luôn
+  const [conversations, setConversations] = useState<Conversation[]>([]);
 
-  // 🌟 2. HÀM TẢI DANH SÁCH (Dùng useCallback để tối ưu)
   useEffect(() => {
     if (!user || !connection) return;
 
     let isMounted = true;
 
-    // Khai báo hàm fetch ngay bên trong để an toàn tuyệt đối
     const loadConversations = async () => {
       try {
         const res = await chatService.getConversations();
@@ -33,10 +27,8 @@ export default function RecentChats() {
       }
     };
 
-    // 1. Tải danh sách lần đầu tiên
     loadConversations();
 
-    // 2. Đăng ký sự kiện SignalR
     const handleReceiveMessage = (res: { data: Message }) => {
       const incomingMsg = res.data;
 
@@ -46,16 +38,17 @@ export default function RecentChats() {
         );
 
         if (index > -1) {
+          // 🌟 CẬP NHẬT TRỰC TIẾP VÀO OBJECT lastMessage
           const updatedConv = {
             ...prev[index],
-            lastMessageContent: incomingMsg.content,
+            lastMessage: incomingMsg,
           };
+
           const newList = [...prev];
           newList.splice(index, 1);
           newList.unshift(updatedConv);
           return newList;
         } else {
-          // Nếu có phòng mới chưa từng chat -> Gọi API lấy lại list
           loadConversations();
           return prev;
         }
@@ -69,7 +62,6 @@ export default function RecentChats() {
     connection.on("ReceiveMessage", handleReceiveMessage);
     connection.on("NewConversationCreated", handleNewConversation);
 
-    // Dọn dẹp tai nghe khi component bị hủy
     return () => {
       isMounted = false;
       connection.off("ReceiveMessage", handleReceiveMessage);
@@ -84,6 +76,26 @@ export default function RecentChats() {
       name: otherUser?.fullName || "Người dùng ẩn danh",
       avatarUrl: otherUser?.avatarUrl || "",
     };
+  };
+
+  const renderLastMessage = (conv: Conversation) => {
+    if (!conv.lastMessage) return "Bắt đầu cuộc trò chuyện...";
+
+    const msg = conv.lastMessage;
+    const isMine = msg.senderId === user?.id;
+
+    // Nếu mình là người gửi
+    if (isMine) return `Bạn: ${msg.content}`;
+
+    // Nếu là người khác gửi trong nhóm chat
+    if (conv.isGroup) {
+      const sender = conv.participants.find((p) => p.userId === msg.senderId);
+      const shortName = sender?.fullName?.split(" ").pop() || "Ai đó";
+      return `${shortName}: ${msg.content}`;
+    }
+
+    // Nếu là chat 1-1
+    return msg.content;
   };
 
   return (
@@ -122,15 +134,10 @@ export default function RecentChats() {
 
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-gray-800 truncate">{name}</p>
-                  <p className="text-xs text-gray-500 truncate mt-0.5">
-                    {/* 🌟 Nếu có tin nhắn mới thì in ra, không thì in chữ Bắt đầu */}
-                    {conv.lastMessageContent || conv.lastMessage?.content ? (
-                      <span className="text-gray-700 font-medium">
-                        {conv.lastMessage?.content || conv.lastMessageContent}
-                      </span>
-                    ) : (
-                      "Bắt đầu cuộc trò chuyện..."
-                    )}
+                  <p
+                    className={`text-xs truncate mt-0.5 ${!conv.lastMessage?.readBy?.includes(user?.id || "") && conv.lastMessage?.senderId !== user?.id ? "text-gray-900 font-bold" : "text-gray-500"}`}
+                  >
+                    {renderLastMessage(conv)}
                   </p>
                 </div>
               </div>
