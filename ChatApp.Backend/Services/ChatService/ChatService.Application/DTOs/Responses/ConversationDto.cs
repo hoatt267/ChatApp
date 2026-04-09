@@ -7,6 +7,7 @@ namespace ChatService.Application.DTOs
         string? Title,
         bool IsGroup,
         DateTime CreatedAt,
-        IEnumerable<ParticipantDto> Participants
+        IEnumerable<ParticipantDto> Participants,
+        MessageDto? LastMessage = null
     );
 }

@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;
 using ChatApp.Shared.Extensions;
+using Microsoft.EntityFrameworkCore;
 
 namespace ChatService.API.Hubs;
 
@@ -21,13 +22,15 @@ public class ChatHub : Hub
     private readonly IPresenceTracker _tracker;
     private readonly IRepository<User> _userRepository;
     private readonly ILogger<ChatHub> _logger;
+    private readonly IRepository<Conversation> _conversationRepository;
 
-    public ChatHub(IMediator mediator, IPresenceTracker tracker, IRepository<User> userRepository, ILogger<ChatHub> logger)
+    public ChatHub(IMediator mediator, IPresenceTracker tracker, IRepository<User> userRepository, ILogger<ChatHub> logger, IRepository<Conversation> conversationRepository)
     {
         _mediator = mediator;
         _tracker = tracker;
         _userRepository = userRepository;
         _logger = logger;
+        _conversationRepository = conversationRepository;
     }
 
     public override async Task OnConnectedAsync()
@@ -98,7 +101,17 @@ public class ChatHub : Hub
         {
             var resultDto = await _mediator.Send(command);
             var apiResponse = ApiResponse<MessageDto>.Ok(resultDto, "Message sent successfully.");
-            await Clients.Group(conversationId.ToString()).SendAsync("ReceiveMessage", apiResponse);
+
+            var conversation = await _conversationRepository.GetAsync<Conversation>(
+                predicate: c => c.Id == conversationId,
+                include: q => q.Include(c => c.Participants)
+            );
+            if (conversation != null)
+            {
+                var participantUserIds = conversation.Participants.Select(p => p.UserId.ToString()).ToList();
+
+                await Clients.Users(participantUserIds).SendAsync("ReceiveMessage", apiResponse);
+            }
         }
         catch (CustomValidationException ex)
         {
