@@ -49,8 +49,8 @@ export default function ChatRoom() {
       setIsLoading(true);
       setHasMore(true);
       try {
-        const convsRes = await chatService.getConversations();
-        const currentConv = convsRes.data.find((c) => c.id === conversationId);
+        const convsRes = await chatService.getConversationById(conversationId);
+        const currentConv = convsRes.data;
         if (isMounted && currentConv) {
           const otherUser = currentConv.participants.find(
             (p) => p.userId !== currentUser?.id,
