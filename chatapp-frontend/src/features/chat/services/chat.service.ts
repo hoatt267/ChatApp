@@ -41,4 +41,23 @@ export const chatService = {
       ApiResponse<Conversation>
     >("/conversations/group", { title, targetUserIds });
   },
+
+  // 5. Gửi file (Ảnh, video, tài liệu...)
+  uploadMedia: (conversationId: string, file: File, content?: string) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (content) {
+      formData.append("content", content);
+    }
+
+    return axiosClient.post(
+      `/conversations/${conversationId}/messages/media`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      },
+    );
+  },
 };

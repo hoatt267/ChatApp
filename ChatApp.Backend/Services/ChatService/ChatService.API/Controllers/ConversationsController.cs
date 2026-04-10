@@ -44,7 +44,7 @@ namespace ChatService.API.Controllers
         }
 
         [HttpPost("{conversationId}/messages/media")]
-        public async Task<IActionResult> UploadMediaMessage([FromRoute] Guid conversationId, [FromForm] IFormFile file)
+        public async Task<IActionResult> UploadMediaMessage([FromRoute] Guid conversationId, [FromForm] IFormFile file, [FromForm] string? content)
         {
             if (file == null || file.Length == 0)
                 throw new BadRequestException("No file uploaded.");
@@ -56,7 +56,7 @@ namespace ChatService.API.Controllers
 
             // Thực thi Command
             using var stream = file.OpenReadStream();
-            var command = new UploadMessageMediaCommand(conversationId, currentUserId, stream, file.FileName, file.ContentType);
+            var command = new UploadMessageMediaCommand(conversationId, currentUserId, stream, file.FileName, file.ContentType, content);
 
             var resultDto = await _mediator.Send(command);
 

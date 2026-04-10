@@ -27,7 +27,6 @@ Nếu bạn cảm thấy tính năng code thế là đủ xài rồi: Chúng ta 
 
 =========================================================================================================
 
-chưa có đã đọc, bấm vào tin nhắn thì phải đã đọc và ko bôi đậm bên conversation nữa
 chưa có gửi file
 chưa có tạo group chat
 

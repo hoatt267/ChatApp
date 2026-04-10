@@ -238,6 +238,18 @@ export default function ChatRoom() {
     .map((id) => onlineUsers.find((u) => u.userId === id)?.fullName)
     .filter((n): n is string => !!n);
 
+  // Xử lý gửi File / Hình ảnh
+  const handleSendMedia = async (file: File, content?: string) => {
+    if (!conversationId) return;
+    try {
+      await chatService.uploadMedia(conversationId, file, content);
+      setNewMessage("");
+    } catch (error) {
+      console.error("Lỗi upload file:", error);
+      alert("Tải tệp lên thất bại. Vui lòng thử lại!");
+    }
+  };
+
   if (isLoading)
     return (
       <div className="flex-1 flex items-center justify-center bg-[#e5ddd5]">
@@ -264,6 +276,7 @@ export default function ChatRoom() {
         value={newMessage}
         onChange={handleInputChange}
         onSubmit={handleSendMessage}
+        onSendMedia={handleSendMedia}
       />
     </div>
   );

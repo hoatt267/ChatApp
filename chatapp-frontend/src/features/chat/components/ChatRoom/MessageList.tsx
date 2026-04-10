@@ -73,9 +73,47 @@ export default function MessageList({
                       {msg.senderName}
                     </p>
                   )}
-                  <p className="text-sm break-words whitespace-pre-wrap">
-                    {msg.content}
-                  </p>
+
+                  {/* 🌟 LOGIC RENDER TIN NHẮN */}
+                  {msg.fileUrl ? (
+                    <div className="flex flex-col gap-1">
+                      {msg.fileUrl.match(
+                        /\.(jpeg|jpg|gif|png|webp)(\?.*)?$/i,
+                      ) ? (
+                        <img
+                          src={msg.fileUrl}
+                          alt="attachment"
+                          className="max-w-[200px] md:max-w-xs rounded-lg object-contain cursor-pointer hover:opacity-90"
+                        />
+                      ) : msg.fileUrl.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i) ? (
+                        <video
+                          src={msg.fileUrl}
+                          controls
+                          className="max-w-[200px] md:max-w-xs rounded-lg object-contain"
+                        />
+                      ) : (
+                        <a
+                          href={msg.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`flex items-center gap-2 p-2 rounded-lg underline text-sm break-all ${isMine ? "bg-blue-600 text-white" : "bg-gray-100 text-blue-600"}`}
+                        >
+                          📎 {msg.fileName || "Tệp đính kèm"}
+                        </a>
+                      )}
+                      {/* Nếu backend cho phép gửi text kèm ảnh, in thêm text ở đây */}
+                      {msg.content && msg.content !== msg.fileName && (
+                        <p className="text-sm break-words whitespace-pre-wrap mt-1">
+                          {msg.content}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm break-words whitespace-pre-wrap">
+                      {msg.content}
+                    </p>
+                  )}
+
                   <p
                     className={`text-[10px] text-right mt-1 ${isMine ? "text-blue-100" : "text-gray-400"}`}
                   >

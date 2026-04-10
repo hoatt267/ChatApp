@@ -59,17 +59,27 @@ namespace ChatService.Application.Features.Chats.Commands.UploadMessageMedia
             var containerName = _configuration["AzureStorage:ChatMediaContainer"] ?? "chat-media";
             var fileUrl = await _blobStorageService.UploadFileAsync(request.FileStream, request.FileName, request.ContentType, containerName);
 
+            var actualContent = !string.IsNullOrWhiteSpace(request.Content) ? request.Content : request.FileName;
+
             // 4. Lưu tin nhắn vào MongoDB
             var message = new Message(
                 conversationId: request.ConversationId,
                 senderId: request.SenderId,
-                content: request.FileName, // Gán tên file làm nội dung text (để hiển thị rút gọn nếu cần)
+                content: actualContent,
                 type: messageType,
                 fileUrl: fileUrl,
                 fileName: request.FileName
             );
 
             await _messageRepository.AddAsync(message);
+
+            string displayContent = !string.IsNullOrWhiteSpace(request.Content)
+                ? request.Content
+                : (messageType == MessageType.Image ? "[Hình ảnh]" :
+                   messageType == MessageType.Video ? "[Video]" : "[Tệp đính kèm]");
+
+            conversation.UpdateLastMessage(displayContent, message.SenderId, message.CreatedAt);
+            await _conversationRepository.SaveChangesAsync();
 
             // 5. Làm giàu dữ liệu (Lắp thêm Tên và Avatar người gửi) và trả về
             var enrichedMessages = await _enricher.EnrichMessagesAsync(new List<Message> { message });
