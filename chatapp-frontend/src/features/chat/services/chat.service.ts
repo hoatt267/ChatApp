@@ -60,4 +60,12 @@ export const chatService = {
       },
     );
   },
+
+  // Lấy chi tiết 1 phòng chat cụ thể (O(1))
+  getConversationById: async (conversationId: string) => {
+    return await axiosClient.get<
+      ApiResponse<Conversation>,
+      ApiResponse<Conversation>
+    >(`/conversations/${conversationId}`);
+  },
 };
