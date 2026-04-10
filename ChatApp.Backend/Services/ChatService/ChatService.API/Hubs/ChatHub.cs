@@ -147,7 +147,17 @@ public class ChatHub : Hub
         var command = new MarkMessagesAsReadCommand(conversationId, userId);
         await _mediator.Send(command);
 
-        // 2. Bắn loa thông báo cho những người khác TRONG CÙNG PHÒNG biết là anh này vừa xem tin nhắn
+        // 2. Cập nhật lại Conversation để lấy danh sách những người đã đọc tin nhắn cuối cùng
+        var conversation = await _conversationRepository.GetAsync<Conversation>(
+            predicate: c => c.Id == conversationId
+        );
+        if (conversation != null)
+        {
+            conversation.MarkLastMessageAsRead(userId);
+            await _conversationRepository.SaveChangesAsync();
+        }
+
+        // 3. Bắn loa thông báo cho những người khác TRONG CÙNG PHÒNG biết là anh này vừa xem tin nhắn
         await Clients.Group(conversationId.ToString())
                      .SendAsync("UserHasReadMessages", conversationId, userId);
     }

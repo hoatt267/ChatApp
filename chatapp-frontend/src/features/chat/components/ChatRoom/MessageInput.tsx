@@ -1,5 +1,6 @@
 import React, { useRef, useState } from "react";
 import { Send, Image as ImageIcon, X, Loader2 } from "lucide-react";
+import { APP_CONFIG } from "../../../../config";
 
 interface MessageInputProps {
   value: string;
@@ -15,13 +16,46 @@ export default function MessageInput({
   onSendMedia,
 }: MessageInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
   // Xử lý khi user chọn file
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) setSelectedFile(file);
+    if (file) {
+      if (file.size > APP_CONFIG.MAX_FILE_SIZE_MB * 1024 * 1024) {
+        alert(
+          `File quá lớn! Vui lòng chọn file dưới ${APP_CONFIG.MAX_FILE_SIZE_MB}MB.`,
+        );
+        handleClearFile();
+        return;
+      }
+      setSelectedFile(file);
+      setTimeout(() => textInputRef.current?.focus(), 0);
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf("image") !== -1) {
+        const file = items[i].getAsFile();
+        if (file) {
+          if (file.size > APP_CONFIG.MAX_FILE_SIZE_MB * 1024 * 1024) {
+            alert(
+              `Ảnh dán vào vượt quá giới hạn ${APP_CONFIG.MAX_FILE_SIZE_MB}MB!`,
+            );
+            return;
+          }
+          setSelectedFile(file);
+          e.preventDefault(); // Ngăn không cho dán tên file/text rác vào ô input
+          break; // Chỉ lấy ảnh đầu tiên
+        }
+      }
+    }
   };
 
   // Hủy bỏ file đã chọn
@@ -103,6 +137,8 @@ export default function MessageInput({
 
           <input
             type="text"
+            ref={textInputRef}
+            onPaste={handlePaste}
             value={value}
             onChange={onChange}
             disabled={isUploading}

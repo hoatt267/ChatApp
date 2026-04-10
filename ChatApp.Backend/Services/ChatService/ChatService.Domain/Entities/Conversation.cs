@@ -18,6 +18,7 @@ namespace ChatService.Domain.Entities
         public string? LastMessageContent { get; private set; }
         public Guid? LastMessageSenderId { get; private set; }
         public DateTime? LastMessageCreatedAt { get; private set; }
+        public List<Guid>? LastMessageReadBy { get; private set; } = new List<Guid>();
 
         // Navigation properties
         public ICollection<Participant> Participants { get; private set; } = new List<Participant>();
@@ -34,8 +35,18 @@ namespace ChatService.Domain.Entities
             LastMessageContent = content;
             LastMessageSenderId = senderId;
             LastMessageCreatedAt = createdAt;
+            LastMessageReadBy = new List<Guid> { senderId };
 
             UpdateTimestamp();
+        }
+
+        public void MarkLastMessageAsRead(Guid userId)
+        {
+            if (LastMessageReadBy == null) LastMessageReadBy = new List<Guid>();
+            if (!LastMessageReadBy.Contains(userId))
+            {
+                LastMessageReadBy.Add(userId);
+            }
         }
     }
 }

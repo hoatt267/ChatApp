@@ -27,9 +27,11 @@ Nếu bạn cảm thấy tính năng code thế là đủ xài rồi: Chúng ta 
 
 =========================================================================================================
 
-chưa có gửi file
 chưa có tạo group chat
 
 
 =======================================================
 xóa key chat_presence => thay bằng heartbeat + TTL
+
+"Đóng băng" người dùng (Thiếu Optimistic UI) - 🚨 Lỗi nặng nhất!
+Thiếu thanh tiến trình (Upload Progress)

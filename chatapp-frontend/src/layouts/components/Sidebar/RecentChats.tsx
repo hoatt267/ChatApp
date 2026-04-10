@@ -114,18 +114,27 @@ export default function RecentChats() {
     const msg = conv.lastMessage;
     const isMine = msg.senderId === user?.id;
 
+    let displayContent = msg.content;
+    if ((!displayContent || displayContent === msg.fileName) && msg.fileUrl) {
+      if (msg.fileUrl.match(/\.(jpeg|jpg|gif|png|webp)(\?.*)?$/i))
+        displayContent = "[Hình ảnh]";
+      else if (msg.fileUrl.match(/\.(mp4|webm|ogg)(\?.*)?$/i))
+        displayContent = "[Video]";
+      else displayContent = "[Tệp đính kèm]";
+    }
+
     // Nếu mình là người gửi
-    if (isMine) return `Bạn: ${msg.content}`;
+    if (isMine) return `Bạn: ${displayContent}`;
 
     // Nếu là người khác gửi trong nhóm chat
     if (conv.isGroup) {
       const sender = conv.participants.find((p) => p.userId === msg.senderId);
       const shortName = sender?.fullName?.split(" ").pop() || "Ai đó";
-      return `${shortName}: ${msg.content}`;
+      return `${shortName}: ${displayContent}`;
     }
 
     // Nếu là chat 1-1
-    return msg.content;
+    return displayContent;
   };
 
   const displayConversations = conversations.filter(
