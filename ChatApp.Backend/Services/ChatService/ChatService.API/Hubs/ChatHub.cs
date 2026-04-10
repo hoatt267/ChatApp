@@ -47,7 +47,6 @@ public class ChatHub : Hub
 
         if (isFirstConnection)
         {
-            // Thay vì gửi mỗi String, gửi 1 object chứa cả ID và Tên
             await Clients.Others.SendAsync("UserIsOnline", new { UserId = userIdString, FullName = myName, AvatarUrl = myAvatar });
         }
 
@@ -149,7 +148,7 @@ public class ChatHub : Hub
         await _mediator.Send(command);
 
         // 2. Bắn loa thông báo cho những người khác TRONG CÙNG PHÒNG biết là anh này vừa xem tin nhắn
-        await Clients.OthersInGroup(conversationId.ToString())
+        await Clients.Group(conversationId.ToString())
                      .SendAsync("UserHasReadMessages", conversationId, userId);
     }
 }

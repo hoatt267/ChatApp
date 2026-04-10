@@ -5,4 +5,5 @@ export const APP_CONFIG = {
 
   MAX_FILE_SIZE_MB: 25,
   PAGINATION_LIMIT: 20,
+  MESSAGES_PER_PAGE: 50,
 };

@@ -12,8 +12,7 @@ import type { Message } from "../../types";
 import ChatHeader from "./ChatHeader";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
-
-const MESSAGES_PER_PAGE = 10;
+import { APP_CONFIG } from "../../../../config";
 
 export default function ChatRoom() {
   const { conversationId } = useParams<{ conversationId: string }>();
@@ -44,6 +43,7 @@ export default function ChatRoom() {
 
   // 1. Fetch data ban đầu (Thông tin phòng + Tin nhắn)
   useEffect(() => {
+    let isMounted = true;
     const fetchInitialData = async () => {
       if (!conversationId) return;
       setIsLoading(true);
@@ -51,7 +51,7 @@ export default function ChatRoom() {
       try {
         const convsRes = await chatService.getConversations();
         const currentConv = convsRes.data.find((c) => c.id === conversationId);
-        if (currentConv) {
+        if (isMounted && currentConv) {
           const otherUser = currentConv.participants.find(
             (p) => p.userId !== currentUser?.id,
           );
@@ -64,18 +64,27 @@ export default function ChatRoom() {
         }
         const msgRes = await chatService.getMessages(
           conversationId,
-          MESSAGES_PER_PAGE,
+          APP_CONFIG.MESSAGES_PER_PAGE,
         );
-        if (msgRes.data.length < MESSAGES_PER_PAGE) setHasMore(false);
-        setMessages(msgRes.data);
+        if (isMounted) {
+          if (msgRes.data.length < APP_CONFIG.MESSAGES_PER_PAGE)
+            setHasMore(false);
+          setMessages(msgRes.data);
+        }
       } catch (error) {
         console.error("Lỗi:", error);
       } finally {
-        setIsLoading(false);
-        setTimeout(scrollToBottom, 100);
+        if (isMounted) {
+          setIsLoading(false);
+          setTimeout(scrollToBottom, 100);
+        }
       }
     };
     fetchInitialData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [conversationId, currentUser?.id, scrollToBottom]);
 
   // 2. Xử lý Infinite Scroll
@@ -96,10 +105,10 @@ export default function ChatRoom() {
       try {
         const res = await chatService.getMessages(
           conversationId,
-          MESSAGES_PER_PAGE,
+          APP_CONFIG.MESSAGES_PER_PAGE,
           oldestMessage.createdAt,
         );
-        if (res.data.length < MESSAGES_PER_PAGE) setHasMore(false);
+        if (res.data.length < APP_CONFIG.MESSAGES_PER_PAGE) setHasMore(false);
         setMessages((prev) => {
           const newMsgs = res.data.filter(
             (m) => !prev.some((p) => p.id === m.id),
@@ -181,6 +190,49 @@ export default function ChatRoom() {
       connection.off("ReceiveMessage", handleReceiveMessage);
     };
   }, [connection, conversationId, scrollToBottom]);
+
+  // MarkAsRead khi vào phòng chat nếu có tin nhắn chưa đọc
+  useEffect(() => {
+    if (!connection || !conversationId || messages.length === 0) return;
+
+    const hasUnread = messages.some(
+      (m) =>
+        m.senderId !== currentUser?.id &&
+        !m.readBy?.includes(currentUser?.id || ""),
+    );
+
+    if (hasUnread) {
+      connection.invoke("MarkAsRead", conversationId).catch(console.error);
+    }
+  }, [connection, conversationId, messages, currentUser?.id]);
+
+  // Lắng nghe sự kiện UserHasReadMessages để cập nhật trạng thái đã đọc
+  useEffect(() => {
+    if (!connection || !conversationId) return;
+
+    const handleUserHasRead = (
+      readConversationId: string,
+      readByUserId: string,
+    ) => {
+      if (readConversationId.toLowerCase() === conversationId.toLowerCase()) {
+        setMessages((prev) =>
+          prev.map((msg) => {
+            // Nếu tin nhắn chưa có ID người này trong mảng readBy thì thêm vào
+            if (!msg.readBy?.includes(readByUserId)) {
+              return { ...msg, readBy: [...(msg.readBy || []), readByUserId] };
+            }
+            return msg;
+          }),
+        );
+      }
+    };
+
+    connection.on("UserHasReadMessages", handleUserHasRead);
+
+    return () => {
+      connection.off("UserHasReadMessages", handleUserHasRead);
+    };
+  }, [connection, conversationId]);
 
   const typingNames = typingUsersInChat
     .map((id) => onlineUsers.find((u) => u.userId === id)?.fullName)

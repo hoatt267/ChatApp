@@ -93,7 +93,7 @@ namespace IdentityService.API
                     ValidIssuer = jwtSettings["Issuer"],
                     ValidAudience = jwtSettings["Audience"],
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
-                    ClockSkew = TimeSpan.Zero // Bỏ độ trễ 5 phút mặc định của .NET
+                    // ClockSkew = TimeSpan.Zero // Bỏ độ trễ 5 phút mặc định của .NET
                 };
             });
             builder.Services.AddAuthorization();
