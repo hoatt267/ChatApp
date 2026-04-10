@@ -10,7 +10,6 @@ export default function RecentChats() {
   const user = useAuthStore((state) => state.user);
   const connection = useChatStore((state) => state.connection);
 
-  // Không cần ChatItem nữa, dùng thẳng Conversation luôn
   const [conversations, setConversations] = useState<Conversation[]>([]);
 
   useEffect(() => {
@@ -59,13 +58,44 @@ export default function RecentChats() {
       loadConversations();
     };
 
+    const handleUserHasRead = (
+      readConversationId: string,
+      readByUserId: string,
+    ) => {
+      setConversations((prev) => {
+        const index = prev.findIndex((c) => c.id === readConversationId);
+        if (index > -1) {
+          const conv = prev[index];
+          // Chỉ cập nhật nếu có lastMessage và người đọc chưa có trong mảng readBy
+          if (
+            conv.lastMessage &&
+            !conv.lastMessage.readBy?.includes(readByUserId)
+          ) {
+            const updatedConv = {
+              ...conv,
+              lastMessage: {
+                ...conv.lastMessage,
+                readBy: [...(conv.lastMessage.readBy || []), readByUserId],
+              },
+            };
+            const newList = [...prev];
+            newList[index] = updatedConv;
+            return newList;
+          }
+        }
+        return prev;
+      });
+    };
+
     connection.on("ReceiveMessage", handleReceiveMessage);
     connection.on("NewConversationCreated", handleNewConversation);
+    connection.on("UserHasReadMessages", handleUserHasRead);
 
     return () => {
       isMounted = false;
       connection.off("ReceiveMessage", handleReceiveMessage);
       connection.off("NewConversationCreated", handleNewConversation);
+      connection.off("UserHasReadMessages", handleUserHasRead);
     };
   }, [user, connection]);
 
@@ -98,19 +128,23 @@ export default function RecentChats() {
     return msg.content;
   };
 
+  const displayConversations = conversations.filter(
+    (conv) => conv.isGroup || conv.lastMessage,
+  );
+
   return (
     <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
       <h3 className="px-3 pt-4 pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-        Gần đây ({conversations.length})
+        Gần đây ({displayConversations.length})
       </h3>
 
-      {conversations.length === 0 ? (
+      {displayConversations.length === 0 ? (
         <div className="text-center text-gray-400 text-sm mt-10">
           Chưa có cuộc trò chuyện nào
         </div>
       ) : (
         <div className="space-y-1">
-          {conversations.map((conv) => {
+          {displayConversations.map((conv) => {
             const { name, avatarUrl } = getChatInfo(conv);
             return (
               <div

@@ -40,12 +40,14 @@ export default function MessageList({
           Hãy là người đầu tiên gửi tin nhắn!
         </div>
       ) : (
-        messages.map((msg) => {
+        messages.map((msg, index) => {
           const isMine = msg.senderId === currentUser?.id;
+          const isLastMessage = index === messages.length - 1;
+          const isReadByOther = isMine && msg.readBy && msg.readBy.length > 0;
           return (
             <div
               key={msg.id}
-              className={`flex ${isMine ? "justify-end" : "justify-start"}`}
+              className={`flex flex-col ${isMine ? "items-end" : "items-start"}`}
             >
               <div
                 className={`max-w-[70%] flex gap-2 ${isMine ? "flex-row-reverse" : "flex-row"}`}
@@ -84,6 +86,11 @@ export default function MessageList({
                   </p>
                 </div>
               </div>
+              {isLastMessage && isReadByOther && (
+                <div className="text-[11px] text-gray-500 mt-1 mr-2 flex items-center gap-1">
+                  ✓ Đã xem
+                </div>
+              )}
             </div>
           );
         })

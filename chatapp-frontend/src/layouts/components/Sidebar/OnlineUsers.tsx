@@ -13,7 +13,7 @@ export default function OnlineUsers() {
 
   const [creatingChatId, setCreatingChatId] = useState<string | null>(null);
   const handleStartChat = async (targetUserId: string) => {
-    if (creatingChatId) return; // Chống spam click
+    if (creatingChatId) return;
 
     try {
       setCreatingChatId(targetUserId);
