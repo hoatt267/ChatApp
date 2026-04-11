@@ -7,7 +7,7 @@ import * as signalR from "@microsoft/signalr";
 import { useAuthStore } from "../../../auth/store/useAuthStore";
 import { useChatStore } from "../../store/useChatStore";
 import { chatService } from "../../services/chat.service";
-import type { Message } from "../../types";
+import { MessageType, type Message } from "../../types";
 
 import ChatHeader from "./ChatHeader";
 import MessageList from "./MessageList";
@@ -178,7 +178,29 @@ export default function ChatRoom() {
       if (
         res.data.conversationId.toLowerCase() === conversationId.toLowerCase()
       ) {
-        setMessages((prev) => [...prev, res.data]);
+        setMessages((prev) => {
+          // 1. Nếu Axios đã nhanh chân ghi đè trước, ta bỏ qua không thêm nữa
+          if (prev.some((m) => m.id === res.data.id)) return prev;
+
+          //  2. TÌM VÀ ĐÈ TIN NHẮN ẢO (OPTIMISTIC)
+          // Kiểm tra xem trên màn hình có tin nhắn ảo nào đang upload của chính mình gửi không
+          const optimisticIndex = prev.findIndex(
+            (m) =>
+              m.isOptimistic &&
+              m.senderId === res.data.senderId &&
+              m.fileName === res.data.fileName,
+          );
+
+          if (optimisticIndex !== -1) {
+            // SignalR về nhanh hơn Axios! Ta sẽ đè tin thật vào vị trí tin ảo ngay lập tức.
+            const newMsgs = [...prev];
+            newMsgs[optimisticIndex] = res.data;
+            return newMsgs;
+          }
+
+          // 3. Nếu là tin nhắn bình thường của người khác
+          return [...prev, res.data];
+        });
         setTimeout(scrollToBottom, 100);
       }
     };
@@ -240,13 +262,75 @@ export default function ChatRoom() {
 
   // Xử lý gửi File / Hình ảnh
   const handleSendMedia = async (file: File, content?: string) => {
-    if (!conversationId) return;
+    if (!conversationId || !currentUser) return;
+
+    const msgType = file.type.startsWith("video/")
+      ? MessageType.Video
+      : file.type.startsWith("image/")
+        ? MessageType.Image
+        : MessageType.Document;
+    // 1.Tạo một ID ảo và một đường link ảo đọc trực tiếp từ RAM
+    const tempId = `temp-${Date.now()}`;
+    const fileUrl = URL.createObjectURL(file);
+    // 2. Tạo Optimistic Message
+    const tempMsg: Message = {
+      id: tempId,
+      conversationId,
+      senderId: currentUser.id,
+      senderName: currentUser.fullName || "",
+      senderAvatarUrl: currentUser.avatarUrl || "",
+      content: content || "",
+      type: msgType,
+      fileUrl: fileUrl,
+      fileName: file.name,
+      createdAt: new Date().toISOString(),
+      readBy: [],
+      isOptimistic: true, //  Đánh dấu cờ
+      progress: 0, //  Tiến trình ban đầu
+    };
+    // 3. Đưa ngay lên màn hình và cuộn xuống
+    setMessages((prev) => [...prev, tempMsg]);
+    setTimeout(scrollToBottom, 100);
+
     try {
-      await chatService.uploadMedia(conversationId, file, content);
-      setNewMessage("");
+      const res = await chatService.uploadMedia(
+        conversationId,
+        file,
+        content,
+        (progressEvent) => {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / (progressEvent.total || file.size),
+          );
+
+          // Cập nhật % vào đúng cái tin nhắn ảo đó
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === tempId ? { ...msg, progress: percentCompleted } : msg,
+            ),
+          );
+        },
+      );
+
+      // 5. Thành công: Xử lý logic đè tin nhắn thông minh
+      const realMsg = res.data;
+
+      setMessages((prev) => {
+        // Kiểm tra xem anh bạn SignalR đã chạy trước và ghi đè tin này chưa
+        const isAlreadyAddedBySignalR = prev.some((m) => m.id === realMsg.id);
+
+        if (isAlreadyAddedBySignalR) {
+          // Nếu SignalR đã làm rồi, ta dọn dẹp cái id ảo (nếu nó còn sót lại)
+          return prev.filter((m) => m.id !== tempId);
+        } else {
+          // Nếu Axios nhanh hơn, Axios sẽ tự thay thế ID ảo bằng ID thật
+          return prev.map((msg) => (msg.id === tempId ? realMsg : msg));
+        }
+      });
     } catch (error) {
       console.error("Lỗi upload file:", error);
-      alert("Tải tệp lên thất bại. Vui lòng thử lại!");
+      // Lỗi thì xóa cái tin nhắn ảo đi và báo lỗi
+      setMessages((prev) => prev.filter((msg) => msg.id !== tempId));
+      alert("Tải tệp lên thất bại");
     }
   };
 

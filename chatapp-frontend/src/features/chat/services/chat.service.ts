@@ -1,3 +1,4 @@
+import type { AxiosProgressEvent } from "axios";
 import axiosClient from "../../../lib/axiosClient";
 import type { ApiResponse } from "../../../types";
 import type { Conversation, Message } from "../types";
@@ -43,7 +44,12 @@ export const chatService = {
   },
 
   // 5. Gửi file (Ảnh, video, tài liệu...)
-  uploadMedia: (conversationId: string, file: File, content?: string) => {
+  uploadMedia: (
+    conversationId: string,
+    file: File,
+    content?: string,
+    onUploadProgress?: (progressEvent: AxiosProgressEvent) => void,
+  ) => {
     const formData = new FormData();
     formData.append("file", file);
     if (content) {
@@ -57,6 +63,7 @@ export const chatService = {
         headers: {
           "Content-Type": "multipart/form-data",
         },
+        onUploadProgress,
       },
     );
   },

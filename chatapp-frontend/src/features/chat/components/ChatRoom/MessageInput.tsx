@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { Send, Image as ImageIcon, X, Loader2 } from "lucide-react";
+import { Send, Image as ImageIcon, X } from "lucide-react";
 import { APP_CONFIG } from "../../../../config";
 
 interface MessageInputProps {
@@ -18,7 +18,6 @@ export default function MessageInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
 
   // Xử lý khi user chọn file
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,13 +67,11 @@ export default function MessageInput({
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedFile) {
-      setIsUploading(true);
-      try {
-        await onSendMedia(selectedFile, value.trim()); // Gọi hàm upload với nội dung
-        handleClearFile(); // Upload xong thì xóa file đã chọn
-      } finally {
-        setIsUploading(false);
-      }
+      onSendMedia(selectedFile, value.trim()); // Gọi hàm upload với nội dung
+      handleClearFile(); // Upload xong thì xóa file đã chọn
+      onChange({
+        target: { value: "" },
+      } as React.ChangeEvent<HTMLInputElement>); // Xóa nội dung text
     } else if (value.trim()) {
       onSubmit(e); // Nếu không có file thì gửi text bình thường
     }
@@ -141,7 +138,7 @@ export default function MessageInput({
             onPaste={handlePaste}
             value={value}
             onChange={onChange}
-            disabled={isUploading}
+            disabled={false}
             placeholder={
               selectedFile ? "Thêm chú thích cho tệp..." : "Nhập tin nhắn..."
             }
@@ -150,14 +147,10 @@ export default function MessageInput({
 
           <button
             type="submit"
-            disabled={(!value.trim() && !selectedFile) || isUploading}
+            disabled={!value.trim() && !selectedFile}
             className="p-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:bg-blue-300 flex-shrink-0"
           >
-            {isUploading ? (
-              <Loader2 size={20} className="animate-spin" />
-            ) : (
-              <Send size={20} />
-            )}
+            <Send size={20} />
           </button>
         </form>
       </div>
