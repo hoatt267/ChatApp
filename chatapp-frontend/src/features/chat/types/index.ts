@@ -35,4 +35,6 @@ export interface Message {
   type: MessageTypeValue;
   fileUrl?: string;
   fileName?: string;
+  isOptimistic?: boolean;
+  progress?: number;
 }

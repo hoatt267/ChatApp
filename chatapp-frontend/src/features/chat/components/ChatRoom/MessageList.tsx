@@ -1,7 +1,7 @@
 // File: src/features/chat/components/ChatRoom/MessageList.tsx
 import React from "react";
 import { Loader2 } from "lucide-react";
-import type { Message } from "../../types";
+import { MessageType, type Message } from "../../types";
 import type { UserResponse } from "../../../auth/types";
 
 interface MessageListProps {
@@ -73,9 +73,59 @@ export default function MessageList({
                       {msg.senderName}
                     </p>
                   )}
-                  <p className="text-sm break-words whitespace-pre-wrap">
-                    {msg.content}
-                  </p>
+
+                  {/* 🌟 LOGIC RENDER TIN NHẮN */}
+                  {msg.fileUrl ? (
+                    <div
+                      className={`flex flex-col gap-1 ${msg.isOptimistic ? "opacity-60 grayscale-[20%]" : ""}`}
+                    >
+                      {msg.type === MessageType.Video ? (
+                        <video
+                          src={msg.fileUrl}
+                          controls
+                          className="max-w-[200px] md:max-w-xs rounded-lg object-contain bg-black"
+                        />
+                      ) : msg.type === MessageType.Image ? (
+                        <img
+                          src={msg.fileUrl}
+                          alt="attachment"
+                          className="max-w-[200px] md:max-w-xs rounded-lg object-contain cursor-pointer"
+                        />
+                      ) : (
+                        <a
+                          href={msg.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`flex items-center gap-2 p-2 rounded-lg underline text-sm break-all ${isMine ? "bg-blue-600 text-white" : "bg-gray-100 text-blue-600"}`}
+                        >
+                          📎 {msg.fileName || "Tệp đính kèm"}
+                        </a>
+                      )}
+
+                      {/* Hiển thị chú thích (nếu có) */}
+                      {msg.content && msg.content !== msg.fileName && (
+                        <p className="text-sm break-words whitespace-pre-wrap mt-1">
+                          {msg.content}
+                        </p>
+                      )}
+
+                      {/* Thanh Tiến Trình cho Optimistic UI */}
+                      {msg.isOptimistic && (
+                        <div className="w-full bg-gray-200 rounded-full h-1 mt-1 overflow-hidden">
+                          <div
+                            className="bg-blue-600 h-1 rounded-full transition-all duration-200"
+                            style={{ width: `${msg.progress || 0}%` }}
+                          ></div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    /* Render Text */
+                    <p className="text-sm break-words whitespace-pre-wrap">
+                      {msg.content}
+                    </p>
+                  )}
+
                   <p
                     className={`text-[10px] text-right mt-1 ${isMine ? "text-blue-100" : "text-gray-400"}`}
                   >

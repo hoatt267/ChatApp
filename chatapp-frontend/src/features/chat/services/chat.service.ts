@@ -1,3 +1,4 @@
+import type { AxiosProgressEvent } from "axios";
 import axiosClient from "../../../lib/axiosClient";
 import type { ApiResponse } from "../../../types";
 import type { Conversation, Message } from "../types";
@@ -40,5 +41,38 @@ export const chatService = {
       ApiResponse<Conversation>,
       ApiResponse<Conversation>
     >("/conversations/group", { title, targetUserIds });
+  },
+
+  // 5. Gửi file (Ảnh, video, tài liệu...)
+  uploadMedia: (
+    conversationId: string,
+    file: File,
+    content?: string,
+    onUploadProgress?: (progressEvent: AxiosProgressEvent) => void,
+  ) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (content) {
+      formData.append("content", content);
+    }
+
+    return axiosClient.post(
+      `/conversations/${conversationId}/messages/media`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        onUploadProgress,
+      },
+    );
+  },
+
+  // Lấy chi tiết 1 phòng chat cụ thể (O(1))
+  getConversationById: async (conversationId: string) => {
+    return await axiosClient.get<
+      ApiResponse<Conversation>,
+      ApiResponse<Conversation>
+    >(`/conversations/${conversationId}`);
   },
 };

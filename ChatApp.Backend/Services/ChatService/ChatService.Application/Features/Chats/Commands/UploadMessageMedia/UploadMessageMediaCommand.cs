@@ -12,6 +12,7 @@ namespace ChatService.Application.Features.Chats.Commands.UploadMessageMedia
         Guid SenderId,
         Stream FileStream,
         string FileName,
-        string ContentType
+        string ContentType,
+        string? Content = null
     ) : IRequest<MessageDto>;
 }

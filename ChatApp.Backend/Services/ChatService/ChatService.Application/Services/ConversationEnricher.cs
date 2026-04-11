@@ -47,7 +47,7 @@ namespace ChatService.Application.Services
                         c.Id,
                         c.LastMessageContent ?? "",
                         c.LastMessageCreatedAt.Value,
-                        new List<Guid>(),
+                        c.LastMessageReadBy ?? new List<Guid>(),
                         MessageType.Text,
                         null,
                         null

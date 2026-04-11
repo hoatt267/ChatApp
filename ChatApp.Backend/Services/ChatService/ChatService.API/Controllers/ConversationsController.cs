@@ -9,6 +9,7 @@ using ChatService.Application.Features.Chats.Commands.CreateGroupChat;
 using ChatService.Application.Features.Chats.Commands.CreatePrivateChat;
 using ChatService.Application.Features.Chats.Commands.UploadMessageMedia;
 using ChatService.Application.Features.Chats.Queries;
+using ChatService.Application.Features.Chats.Queries.GetConversationById;
 using ChatService.Application.Features.Chats.Queries.GetUserConversations;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -44,7 +45,7 @@ namespace ChatService.API.Controllers
         }
 
         [HttpPost("{conversationId}/messages/media")]
-        public async Task<IActionResult> UploadMediaMessage([FromRoute] Guid conversationId, [FromForm] IFormFile file)
+        public async Task<IActionResult> UploadMediaMessage([FromRoute] Guid conversationId, [FromForm] IFormFile file, [FromForm] string? content)
         {
             if (file == null || file.Length == 0)
                 throw new BadRequestException("No file uploaded.");
@@ -56,7 +57,7 @@ namespace ChatService.API.Controllers
 
             // Thực thi Command
             using var stream = file.OpenReadStream();
-            var command = new UploadMessageMediaCommand(conversationId, currentUserId, stream, file.FileName, file.ContentType);
+            var command = new UploadMessageMediaCommand(conversationId, currentUserId, stream, file.FileName, file.ContentType, content);
 
             var resultDto = await _mediator.Send(command);
 
@@ -77,6 +78,17 @@ namespace ChatService.API.Controllers
             var result = await _mediator.Send(query);
 
             return Ok(ApiResponse<IEnumerable<ConversationDto>>.Ok(result, "Conversations retrieved successfully."));
+        }
+
+        [HttpGet("{conversationId}")]
+        public async Task<IActionResult> GetConversationById(Guid conversationId)
+        {
+            var currentUserId = User.GetUserId();
+
+            var query = new GetConversationByIdQuery(conversationId, currentUserId);
+            var result = await _mediator.Send(query);
+
+            return Ok(ApiResponse<ConversationDto>.Ok(result, "Lấy thông tin cuộc trò chuyện thành công."));
         }
 
         // API TẠO HOẶC LẤY PHÒNG CHAT 1-1
