@@ -142,9 +142,10 @@ public class ChatHub : Hub
     public async Task MarkAsRead(Guid conversationId)
     {
         var userId = Context.User!.GetUserId();
+        var readAt = DateTime.UtcNow;
 
         // 1. Gửi Command xuống MongoDB để lưu trạng thái
-        var command = new MarkMessagesAsReadCommand(conversationId, userId);
+        var command = new MarkMessagesAsReadCommand(conversationId, userId, readAt);
         await _mediator.Send(command);
 
         // 2. Cập nhật lại Conversation để lấy danh sách những người đã đọc tin nhắn cuối cùng
@@ -159,6 +160,6 @@ public class ChatHub : Hub
 
         // 3. Bắn loa thông báo cho những người khác TRONG CÙNG PHÒNG biết là anh này vừa xem tin nhắn
         await Clients.Group(conversationId.ToString())
-                     .SendAsync("UserHasReadMessages", conversationId, userId);
+                     .SendAsync("UserHasReadMessages", conversationId, userId, readAt);
     }
 }

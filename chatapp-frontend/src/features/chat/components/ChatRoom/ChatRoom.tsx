@@ -7,7 +7,7 @@ import * as signalR from "@microsoft/signalr";
 import { useAuthStore } from "../../../auth/store/useAuthStore";
 import { useChatStore } from "../../store/useChatStore";
 import { chatService } from "../../services/chat.service";
-import { MessageType, type Message } from "../../types";
+import { MessageType, type Message, type Participant } from "../../types";
 
 import ChatHeader from "./ChatHeader";
 import MessageList from "./MessageList";
@@ -16,6 +16,7 @@ import { APP_CONFIG } from "../../../../config";
 
 export default function ChatRoom() {
   const { conversationId } = useParams<{ conversationId: string }>();
+  const [participants, setParticipants] = useState<Participant[]>([]);
   const currentUser = useAuthStore((state) => state.user);
   const connection = useChatStore((state) => state.connection);
   const onlineUsers = useChatStore((state) => state.onlineUsers);
@@ -52,6 +53,7 @@ export default function ChatRoom() {
         const convsRes = await chatService.getConversationById(conversationId);
         const currentConv = convsRes.data;
         if (isMounted && currentConv) {
+          setParticipants(currentConv.participants);
           const otherUser = currentConv.participants.find(
             (p) => p.userId !== currentUser?.id,
           );
@@ -220,7 +222,7 @@ export default function ChatRoom() {
     const hasUnread = messages.some(
       (m) =>
         m.senderId !== currentUser?.id &&
-        !m.readBy?.includes(currentUser?.id || ""),
+        !m.readBy?.some((r) => r.userId === currentUser?.id),
     );
 
     if (hasUnread) {
@@ -235,13 +237,20 @@ export default function ChatRoom() {
     const handleUserHasRead = (
       readConversationId: string,
       readByUserId: string,
+      readAt: string,
     ) => {
       if (readConversationId.toLowerCase() === conversationId.toLowerCase()) {
         setMessages((prev) =>
           prev.map((msg) => {
             // Nếu tin nhắn chưa có ID người này trong mảng readBy thì thêm vào
-            if (!msg.readBy?.includes(readByUserId)) {
-              return { ...msg, readBy: [...(msg.readBy || []), readByUserId] };
+            if (!msg.readBy?.some((r) => r.userId === readByUserId)) {
+              return {
+                ...msg,
+                readBy: [
+                  ...(msg.readBy || []),
+                  { userId: readByUserId, readAt: readAt },
+                ],
+              };
             }
             return msg;
           }),
@@ -355,6 +364,7 @@ export default function ChatRoom() {
         chatContainerRef={chatContainerRef}
         messagesEndRef={messagesEndRef}
         onScroll={handleScroll}
+        participants={participants}
       />
       <MessageInput
         value={newMessage}

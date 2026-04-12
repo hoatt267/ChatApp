@@ -121,11 +121,11 @@ namespace ChatService.API.Controllers
             var command = new CreateGroupChatCommand(request.Title, request.TargetUserIds, currentUserId);
             var result = await _mediator.Send(command);
 
-            // Bắn tín hiệu bí mật gọi đích danh tất cả User trong TargetUserIds báo rằng "Ê, có người vừa tạo phòng với bạn kìa, reload danh bạ đi!"
-            var targetUserIdsString = request.TargetUserIds.Select(id => id.ToString()).ToList();
+            var notificationUserIds = request.TargetUserIds.Select(id => id.ToString()).ToList();
+            notificationUserIds.Add(currentUserId.ToString());
 
             // Dùng Clients.Users để bắn tín hiệu đến tất cả thành viên được mời vào nhóm
-            await _chatHubContext.Clients.Users(targetUserIdsString).SendAsync("NewConversationCreated");
+            await _chatHubContext.Clients.Users(notificationUserIds).SendAsync("NewConversationCreated");
 
             return Ok(ApiResponse<ConversationDto>.Ok(result, "Group chat created successfully."));
         }

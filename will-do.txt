@@ -31,7 +31,17 @@ chưa có tạo group chat
 
 
 =======================================================
-xóa key chat_presence => thay bằng heartbeat + TTL
 
-"Đóng băng" người dùng (Thiếu Optimistic UI) - 🚨 Lỗi nặng nhất!
-Thiếu thanh tiến trình (Upload Progress)
+
+Tính năng 1: Chức năng Thu hồi tin nhắn (Unsend message).
+
+Tính năng 2: Chức năng Trích dẫn / Trả lời tin nhắn (Reply message).
+
+Tính năng 3: Thả cảm xúc (Reactions: ❤️, 😂, 👍) vào từng bong bóng chat.
+
+Tính năng 4: Cuộn trang có phân trang (Pagination) mượt mà hơn cho danh sách ngoài Sidebar (RecentChats), vì nếu sau này có 1000 phòng chat thì load 1 lần sẽ hơi nặng.
+==============================================================================================================
+đổi tên nhóm chat, avt nhóm chat, thêm/xóa người
+ko có 2 người online không cho tạo group chat? => nếu fix thì chia component ra group riêng, online riêng
+
+xóa key chat_presence => thay bằng heartbeat + TTL
