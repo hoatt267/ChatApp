@@ -61,6 +61,7 @@ export default function RecentChats() {
     const handleUserHasRead = (
       readConversationId: string,
       readByUserId: string,
+      readAt: string,
     ) => {
       setConversations((prev) => {
         const index = prev.findIndex((c) => c.id === readConversationId);
@@ -69,13 +70,16 @@ export default function RecentChats() {
           // Chỉ cập nhật nếu có lastMessage và người đọc chưa có trong mảng readBy
           if (
             conv.lastMessage &&
-            !conv.lastMessage.readBy?.includes(readByUserId)
+            !conv.lastMessage.readBy?.some((r) => r.userId === readByUserId)
           ) {
             const updatedConv = {
               ...conv,
               lastMessage: {
                 ...conv.lastMessage,
-                readBy: [...(conv.lastMessage.readBy || []), readByUserId],
+                readBy: [
+                  ...(conv.lastMessage.readBy || []),
+                  { userId: readByUserId, readAt: readAt },
+                ],
               },
             };
             const newList = [...prev];
@@ -178,7 +182,7 @@ export default function RecentChats() {
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-gray-800 truncate">{name}</p>
                   <p
-                    className={`text-xs truncate mt-0.5 ${!conv.lastMessage?.readBy?.includes(user?.id || "") && conv.lastMessage?.senderId !== user?.id ? "text-gray-900 font-bold" : "text-gray-500"}`}
+                    className={`text-xs truncate mt-0.5 ${!conv.lastMessage?.readBy?.some((r) => r.userId === user?.id) && conv.lastMessage?.senderId !== user?.id ? "text-gray-900 font-bold" : "text-gray-500"}`}
                   >
                     {renderLastMessage(conv)}
                   </p>

@@ -1,4 +1,5 @@
 using ChatService.Domain.Enums;
+using ChatService.Domain.Models;
 
 namespace ChatService.Application.DTOs
 {
@@ -10,7 +11,7 @@ namespace ChatService.Application.DTOs
         Guid ConversationId,
         string Content,
         DateTime CreatedAt,
-        IEnumerable<Guid> ReadBy,
+        IEnumerable<ReadReceipt> ReadBy,
         MessageType Type = MessageType.Text,
         string? FileUrl = null,
         string? FileName = null

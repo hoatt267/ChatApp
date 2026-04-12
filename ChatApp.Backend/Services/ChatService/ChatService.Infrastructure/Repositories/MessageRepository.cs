@@ -1,5 +1,6 @@
 using ChatService.Application.Interfaces;
 using ChatService.Domain.Entities;
+using ChatService.Domain.Models;
 using ChatService.Infrastructure.Settings;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
@@ -40,15 +41,15 @@ namespace ChatService.Infrastructure.Repositories
                 .ToListAsync();
         }
 
-        public async Task MarkMessagesAsReadAsync(Guid conversationId, Guid userId)
+        public async Task MarkMessagesAsReadAsync(Guid conversationId, Guid userId, DateTime readAt)
         {
             // Cập nhật tất cả tin nhắn trong phòng đã đọc bởi userId
             var filterBuilder = Builders<Message>.Filter;
             var filter = filterBuilder.Eq(x => x.ConversationId, conversationId) &
                          filterBuilder.Ne(x => x.SenderId, userId) &
-                         filterBuilder.Not(filterBuilder.AnyEq(x => x.ReadBy, userId));
+                         filterBuilder.Not(filterBuilder.ElemMatch(x => x.ReadBy, r => r.UserId == userId));
 
-            var update = Builders<Message>.Update.AddToSet(x => x.ReadBy, userId);
+            var update = Builders<Message>.Update.AddToSet(x => x.ReadBy, new ReadReceipt { UserId = userId, ReadAt = readAt });
 
             await _messagesCollection.UpdateManyAsync(filter, update);
         }

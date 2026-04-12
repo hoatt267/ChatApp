@@ -1,5 +1,6 @@
 using ChatApp.Shared.Domain;
 using ChatService.Domain.Enums;
+using ChatService.Domain.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
@@ -28,7 +29,7 @@ namespace ChatService.Domain.Entities
         public Guid ConversationId { get; private set; }
         public Guid SenderId { get; private set; }
         public string Content { get; private set; } = string.Empty;
-        public HashSet<Guid> ReadBy { get; private set; } = new HashSet<Guid>();
+        public List<ReadReceipt> ReadBy { get; private set; } = new List<ReadReceipt>();
 
         public string? FileUrl { get; private set; }
         [BsonRepresentation(BsonType.String)]
@@ -36,11 +37,11 @@ namespace ChatService.Domain.Entities
         public string? FileName { get; private set; }
 
         // Behaviors
-        public void MarkAsRead(Guid userId)
+        public void MarkAsRead(Guid userId, DateTime readAt)
         {
-            if (userId != SenderId && !ReadBy.Contains(userId))
+            if (userId != SenderId && !ReadBy.Any(r => r.UserId == userId))
             {
-                ReadBy.Add(userId);
+                ReadBy.Add(new ReadReceipt { UserId = userId, ReadAt = readAt });
                 UpdateTimestamp();
             }
         }

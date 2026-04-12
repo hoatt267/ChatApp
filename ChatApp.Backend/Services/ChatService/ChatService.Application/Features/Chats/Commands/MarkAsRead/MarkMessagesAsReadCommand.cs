@@ -6,5 +6,5 @@ using MediatR;
 
 namespace ChatService.Application.Features.Chats.Commands.MarkAsRead
 {
-    public record MarkMessagesAsReadCommand(Guid ConversationId, Guid UserId) : IRequest<bool>;
+    public record MarkMessagesAsReadCommand(Guid ConversationId, Guid UserId, DateTime ReadAt) : IRequest<bool>;
 }

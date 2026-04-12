@@ -4,6 +4,7 @@ using ChatService.Application.DTOs.Responses;
 using ChatService.Application.Interfaces;
 using ChatService.Domain.Entities;
 using ChatService.Domain.Enums;
+using ChatService.Domain.Models;
 
 namespace ChatService.Application.Services
 {
@@ -47,7 +48,7 @@ namespace ChatService.Application.Services
                         c.Id,
                         c.LastMessageContent ?? "",
                         c.LastMessageCreatedAt.Value,
-                        c.LastMessageReadBy ?? new List<Guid>(),
+                        c.LastMessageReadBy?.Select(id => new ReadReceipt { UserId = id, ReadAt = c.LastMessageCreatedAt.Value }).ToList() ?? new List<ReadReceipt>(),
                         MessageType.Text,
                         null,
                         null

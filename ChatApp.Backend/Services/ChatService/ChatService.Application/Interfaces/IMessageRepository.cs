@@ -11,6 +11,6 @@ namespace ChatService.Application.Interfaces
         Task<List<Message>> GetMessagesByConversationIdAsync(Guid conversationId, int limit = 50, DateTime? before = null);
 
         // Đánh dấu đã đọc cho tất cả tin nhắn trong phòng
-        Task MarkMessagesAsReadAsync(Guid conversationId, Guid userId);
+        Task MarkMessagesAsReadAsync(Guid conversationId, Guid userId, DateTime readAt);
     }
 }

@@ -23,6 +23,11 @@ export const MessageType = {
 } as const;
 export type MessageTypeValue = (typeof MessageType)[keyof typeof MessageType];
 
+export interface ReadReceipt {
+  userId: string;
+  readAt: string;
+}
+
 export interface Message {
   id: string;
   senderId: string;
@@ -31,7 +36,7 @@ export interface Message {
   conversationId: string;
   content: string;
   createdAt: string;
-  readBy: string[];
+  readBy: ReadReceipt[];
   type: MessageTypeValue;
   fileUrl?: string;
   fileName?: string;

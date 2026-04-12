@@ -18,7 +18,7 @@ namespace ChatService.Application.Features.Chats.Commands.MarkAsRead
 
         public async Task<bool> Handle(MarkMessagesAsReadCommand request, CancellationToken cancellationToken)
         {
-            await _messageRepository.MarkMessagesAsReadAsync(request.ConversationId, request.UserId);
+            await _messageRepository.MarkMessagesAsReadAsync(request.ConversationId, request.UserId, request.ReadAt);
             return true;
         }
     }
