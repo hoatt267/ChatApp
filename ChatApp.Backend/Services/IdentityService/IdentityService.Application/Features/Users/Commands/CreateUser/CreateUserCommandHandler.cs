@@ -36,7 +36,7 @@ namespace IdentityService.Application.Features.Users.Commands.CreateUser
 
             // Use BCrypt to hash the password before saving
             string hashedPassword = BCrypt.Net.BCrypt.HashPassword(request.Password);
-            var user = new User(request.Email, hashedPassword, request.FullName, null);
+            var user = new User(request.Email, hashedPassword, request.FullName);
 
             //Logic gán role mặc định cho user mới tạo
             var role = await _roleRepository.GetAsync<Role>(predicate: r => r.Name == RoleEnum.User);
@@ -56,8 +56,7 @@ namespace IdentityService.Application.Features.Users.Commands.CreateUser
             {
                 UserId = user.Id,
                 Email = user.Email,
-                FullName = user.FullName,
-                AvatarUrl = user.AvatarUrl
+                FullName = user.FullName ?? string.Empty,
             };
 
             await _publishEndpoint.Publish(userCreateEvent, cancellationToken);

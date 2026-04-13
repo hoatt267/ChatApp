@@ -5,6 +5,5 @@ namespace ChatApp.Shared.Events
         public Guid UserId { get; init; }
         public string Email { get; init; } = null!;
         public string FullName { get; init; } = null!;
-        public string AvatarUrl { get; init; } = string.Empty;
     }
 }

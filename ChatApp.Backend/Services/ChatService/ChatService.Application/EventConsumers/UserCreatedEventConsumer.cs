@@ -23,7 +23,7 @@ namespace ChatService.Application.EventConsumers
             if (exists) return;
 
             // 2. Tạo bản sao User và lưu vào Database của ChatService
-            var user = new User(message.UserId, message.FullName, message.AvatarUrl);
+            var user = new User(message.UserId, message.FullName);
 
             await _userRepository.AddAsync(user);
         }

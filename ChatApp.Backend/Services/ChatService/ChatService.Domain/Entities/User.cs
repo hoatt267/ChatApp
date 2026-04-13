@@ -10,6 +10,12 @@ namespace ChatService.Domain.Entities
 
         public User() { }
 
+        public User(Guid id, string fullName)
+        {
+            Id = id;
+            FullName = fullName;
+        }
+
         public User(Guid id, string fullName, string avatarUrl)
         {
             Id = id;
