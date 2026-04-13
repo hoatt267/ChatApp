@@ -11,7 +11,6 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ChatApp.Shared.Extensions;
-using IdentityService.Application.Features.Users.Commands.UploadAvatar;
 using IdentityService.Application.Features.Users.Queries.GetUserById;
 
 namespace IdentityService.API.Controllers;
@@ -89,29 +88,6 @@ public class UsersController : ControllerBase
         var userProfile = await _mediator.Send(query);
 
         return Ok(ApiResponse<object>.Ok(userProfile, "Profile retrieved successfully."));
-    }
-
-    [HttpPost("avatar")]
-    [Authorize]
-    public async Task<IActionResult> UploadAvatar(IFormFile file)
-    {
-        // 1. Kiểm tra file hợp lệ
-        if (file == null || file.Length == 0)
-            throw new BadRequestException("No file uploaded.");
-
-        if (file.Length > 5 * 1024 * 1024) // Giới hạn 5MB
-            throw new BadRequestException("File size exceeds 5MB limit.");
-
-        // 2. Lấy ID người dùng và luồng dữ liệu file
-        var currentUserId = User.GetUserId();
-        using var stream = file.OpenReadStream();
-
-        var command = new UploadAvatarCommand(currentUserId, stream, file.FileName, file.ContentType);
-
-        // 3. Thực thi Command
-        var newAvatarUrl = await _mediator.Send(command);
-
-        return Ok(ApiResponse<string>.Ok(newAvatarUrl, "Avatar uploaded successfully."));
     }
 
     private void SetRefreshTokenCookie(string token)

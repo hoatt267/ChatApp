@@ -26,8 +26,7 @@ namespace IdentityService.API
 
         private static void RegisterApplication(WebApplicationBuilder builder)
         {
-            // Đăng ký Blob Storage Service
-            builder.Services.AddScoped<IBlobStorageService, AzureBlobStorageService>();
+
         }
 
         private static void RegisterInfrastructure(WebApplicationBuilder builder)

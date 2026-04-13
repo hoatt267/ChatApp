@@ -45,3 +45,31 @@ Tính năng 4: Cuộn trang có phân trang (Pagination) mượt mà hơn cho da
 ko có 2 người online không cho tạo group chat? => nếu fix thì chia component ra group riêng, online riêng
 
 xóa key chat_presence => thay bằng heartbeat + TTL
+
+========================================================================================================
+dotnet ef database update -p Services/UserService/UserService.Infrastructure/UserService.Infrastructure.csproj -s Services/UserService/UserService.API/UserService.API.csproj
+
+dotnet ef database update -p Services/IdentityService/IdentityService.Infrastructure/IdentityService.Infrastructure.csproj -s Services/IdentityService/IdentityService.API/IdentityService.API.csproj
+
+[HttpPost("avatar")]
+    [Authorize]
+    public async Task<IActionResult> UploadAvatar(IFormFile file)
+    {
+        // 1. Kiểm tra file hợp lệ
+        if (file == null || file.Length == 0)
+            throw new BadRequestException("No file uploaded.");
+
+        if (file.Length > 5 * 1024 * 1024) // Giới hạn 5MB
+            throw new BadRequestException("File size exceeds 5MB limit.");
+
+        // 2. Lấy ID người dùng và luồng dữ liệu file
+        var currentUserId = User.GetUserId();
+        using var stream = file.OpenReadStream();
+
+        var command = new UploadAvatarCommand(currentUserId, stream, file.FileName, file.ContentType);
+
+        // 3. Thực thi Command
+        var newAvatarUrl = await _mediator.Send(command);
+
+        return Ok(ApiResponse<string>.Ok(newAvatarUrl, "Avatar uploaded successfully."));
+    }

@@ -15,5 +15,11 @@
     <Project Path="Services/IdentityService/IdentityService.Domain/IdentityService.Domain.csproj" />
     <Project Path="Services/IdentityService/IdentityService.Infrastructure/IdentityService.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/Services/UserService/">
+    <Project Path="Services/UserService/UserService.API/UserService.API.csproj" />
+    <Project Path="Services/UserService/UserService.Application/UserService.Application.csproj" />
+    <Project Path="Services/UserService/UserService.Domain/UserService.Domain.csproj" />
+    <Project Path="Services/UserService/UserService.Infrastructure/UserService.Infrastructure.csproj" />
+  </Folder>
   <Project Path="ApiGateway/ApiGateway.csproj" />
 </Solution>
