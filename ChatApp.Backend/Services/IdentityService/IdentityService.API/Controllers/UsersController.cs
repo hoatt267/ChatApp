@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using IdentityService.Application.DTOs;
 using IdentityService.Application.DTOs.Responses;
 using IdentityService.Application.Features.Auth.Commands.Login;
@@ -8,10 +7,7 @@ using IdentityService.Application.Features.Users.Commands;
 using ChatApp.Shared.Wrappers;
 using ChatApp.Shared.Exceptions;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ChatApp.Shared.Extensions;
-using IdentityService.Application.Features.Users.Queries.GetUserById;
 
 namespace IdentityService.API.Controllers;
 
@@ -77,17 +73,6 @@ public class UsersController : ControllerBase
         }
 
         return Ok(ApiResponse<object>.Ok(null, "Logged out successfully."));
-    }
-
-    [Authorize]
-    [HttpGet("me")]
-    public async Task<IActionResult> GetMyProfile()
-    {
-        var userId = User.GetUserId();
-        var query = new GetUserByIdQuery(userId);
-        var userProfile = await _mediator.Send(query);
-
-        return Ok(ApiResponse<object>.Ok(userProfile, "Profile retrieved successfully."));
     }
 
     private void SetRefreshTokenCookie(string token)
