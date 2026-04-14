@@ -8,6 +8,9 @@ using ChatApp.Shared.Wrappers;
 using ChatApp.Shared.Exceptions;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using IdentityService.Application.Features.Users.Commands.SyncOldUsers;
+using Microsoft.AspNetCore.Authorization;
+using IdentityService.Domain.Enums;
 
 namespace IdentityService.API.Controllers;
 
@@ -73,6 +76,16 @@ public class UsersController : ControllerBase
         }
 
         return Ok(ApiResponse<object>.Ok(null, "Logged out successfully."));
+    }
+
+    [HttpPost("sync-old-users")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> SyncOldUsers()
+    {
+        var command = new SyncOldUsersCommand();
+        var count = await _mediator.Send(command);
+
+        return Ok(ApiResponse<int>.Ok(count, $"Đã phát lại sự kiện đồng bộ cho {count} users."));
     }
 
     private void SetRefreshTokenCookie(string token)
