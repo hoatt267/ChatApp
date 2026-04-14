@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using IdentityService.Application.DTOs;
 using IdentityService.Application.DTOs.Responses;
 using IdentityService.Application.Features.Auth.Commands.Login;
@@ -8,10 +7,10 @@ using IdentityService.Application.Features.Users.Commands;
 using ChatApp.Shared.Wrappers;
 using ChatApp.Shared.Exceptions;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ChatApp.Shared.Extensions;
-using IdentityService.Application.Features.Users.Queries.GetUserById;
+using IdentityService.Application.Features.Users.Commands.SyncOldUsers;
+using Microsoft.AspNetCore.Authorization;
+using IdentityService.Domain.Enums;
 
 namespace IdentityService.API.Controllers;
 
@@ -79,15 +78,14 @@ public class UsersController : ControllerBase
         return Ok(ApiResponse<object>.Ok(null, "Logged out successfully."));
     }
 
-    [Authorize]
-    [HttpGet("me")]
-    public async Task<IActionResult> GetMyProfile()
+    [HttpPost("sync-old-users")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> SyncOldUsers()
     {
-        var userId = User.GetUserId();
-        var query = new GetUserByIdQuery(userId);
-        var userProfile = await _mediator.Send(query);
+        var command = new SyncOldUsersCommand();
+        var count = await _mediator.Send(command);
 
-        return Ok(ApiResponse<object>.Ok(userProfile, "Profile retrieved successfully."));
+        return Ok(ApiResponse<int>.Ok(count, $"Đã phát lại sự kiện đồng bộ cho {count} users."));
     }
 
     private void SetRefreshTokenCookie(string token)

@@ -12,6 +12,13 @@ namespace UserService.Domain.Entities
             AvatarUrl = avatarUrl;
         }
 
+        public UserProfile(Guid id, string email, string? fullName)
+        {
+            Id = id;
+            Email = email;
+            FullName = fullName;
+        }
+
         public string Email { get; private set; } = string.Empty;
         public string? FullName { get; private set; }
         public string? AvatarUrl { get; private set; }

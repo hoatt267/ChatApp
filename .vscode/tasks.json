@@ -12,6 +12,16 @@
             "problemMatcher": "$msCompile"
         },
         {
+            "label": "build-user",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/ChatApp.Backend/Services/UserService/UserService.API/UserService.API.csproj"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
             "label": "build-chat",
             "command": "dotnet",
             "type": "process",

@@ -46,8 +46,8 @@ namespace IdentityService.Application.Features.Users.Commands.CreateUser
                 role = new Role(RoleEnum.User);
                 await _roleRepository.AddAsync(role);
             }
-
-            user.UserRoles.Add(new UserRole(userId: user.Id, roleId: role.Id));
+            var userRole = new UserRole(userId: user.Id, roleId: role.Id);
+            user.UserRoles.Add(userRole);
 
             await _userRepository.AddAsync(user);
 

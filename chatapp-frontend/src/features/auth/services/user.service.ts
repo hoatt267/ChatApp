@@ -7,7 +7,7 @@ export const userService = {
     return await axiosClient.get<
       ApiResponse<UserResponse>,
       ApiResponse<UserResponse>
-    >("/users/me");
+    >("/profiles/me");
   },
 
   logout: async () => {
@@ -21,7 +21,7 @@ export const userService = {
     formData.append("file", file);
 
     return await axiosClient.post<ApiResponse<string>, ApiResponse<string>>(
-      "/users/avatar",
+      "/profiles/avatar",
       formData,
       {
         headers: {

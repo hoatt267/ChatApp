@@ -1,3 +1,4 @@
+using System.Text;
 using ChatApp.Shared.Behaviors;
 using ChatApp.Shared.Interfaces;
 using ChatApp.Shared.Middlewares;
@@ -6,7 +7,10 @@ using ChatApp.Shared.Services;
 using FluentValidation;
 using MassTransit;
 using MediatR;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using UserService.Application.EventConsumers;
 using UserService.Infrastructure.DatabaseContext;
 
 namespace UserService.API
@@ -26,12 +30,16 @@ namespace UserService.API
             // Lấy Assembly của Application layer (sẽ dùng để scan MediatR, Validator sau này)
             var applicationAssembly = typeof(UserService.Application.AssemblyReference).Assembly;
 
+
             // Đăng ký MediatR & Pipeline Behavior
             builder.Services.AddMediatR(cfg =>
             {
                 cfg.RegisterServicesFromAssembly(applicationAssembly);
                 cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
             });
+
+            // Đăng ký AutoMapper
+            builder.Services.AddAutoMapper(cfg => cfg.AddMaps(applicationAssembly));
 
             // Đăng ký FluentValidation
             builder.Services.AddValidatorsFromAssembly(applicationAssembly);
@@ -46,10 +54,29 @@ namespace UserService.API
             builder.Services.AddScoped<DbContext>(provider => provider.GetRequiredService<UserDbContext>());
             builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
+            // Đăng ký Authentication & JWT
+            builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(options =>
+                {
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true,
+                        ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
+                        ValidAudience = builder.Configuration["JwtSettings:Audience"],
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:SecretKey"]!))
+                    };
+                });
+
+            builder.Services.AddAuthorization();
+
             // Setup MassTransit (RabbitMQ)
             builder.Services.AddMassTransit(x =>
             {
-                // TODO: Chút nữa chúng ta sẽ cấu hình Consumer ở đây
+                // 1. Khai báo Consumer
+                x.AddConsumer<UserCreatedEventConsumer>();
 
                 x.UsingRabbitMq((context, cfg) =>
                 {
@@ -58,6 +85,12 @@ namespace UserService.API
                         h.Username("guest");
                         h.Password("guest");
                     });
+
+                    cfg.ReceiveEndpoint("user-service-user-created", e =>
+                    {
+                        e.ConfigureConsumer<UserCreatedEventConsumer>(context);
+                    });
+
                     cfg.ConfigureEndpoints(context);
                 });
             });
