@@ -9,6 +9,7 @@ namespace UserService.Application.Mappings
         public MappingProfile()
         {
             CreateMap<UserProfile, ProfileDto>();
+            CreateMap<Friendship, FriendshipDto>();
         }
     }
 }
