@@ -7,6 +7,8 @@ using UserService.Application.DTOs.Request;
 using UserService.Application.DTOs.Response;
 using UserService.Application.Features.Profiles.Commands.AcceptFriendRequest;
 using UserService.Application.Features.Profiles.Commands.SendFriendRequest;
+using UserService.Application.Features.Profiles.Queries.GetFriends;
+using UserService.Domain.Enums;
 
 namespace UserService.API.Controllers
 {
@@ -42,6 +44,26 @@ namespace UserService.API.Controllers
             var result = await _mediator.Send(command);
 
             return Ok(ApiResponse<FriendshipDto>.Ok(result, "Friend request accepted."));
+        }
+
+        [HttpGet("accepted")]
+        public async Task<IActionResult> GetFriends()
+        {
+            var currentUserId = User.GetUserId();
+            var query = new GetFriendsQuery(currentUserId, FriendshipStatus.Accepted);
+            var friends = await _mediator.Send(query);
+
+            return Ok(ApiResponse<List<FriendProfileDto>>.Ok(friends, "Danh sách bạn bè."));
+        }
+
+        [HttpGet("pending")]
+        public async Task<IActionResult> GetPendingRequests()
+        {
+            var currentUserId = User.GetUserId();
+            var query = new GetFriendsQuery(currentUserId, FriendshipStatus.Pending);
+            var requests = await _mediator.Send(query);
+
+            return Ok(ApiResponse<List<FriendProfileDto>>.Ok(requests, "Danh sách lời mời kết bạn."));
         }
     }
 }
