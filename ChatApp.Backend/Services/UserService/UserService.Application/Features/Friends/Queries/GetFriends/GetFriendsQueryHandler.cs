@@ -3,7 +3,7 @@ using MediatR;
 using UserService.Application.DTOs.Response;
 using UserService.Domain.Entities;
 
-namespace UserService.Application.Features.Profiles.Queries.GetFriends
+namespace UserService.Application.Features.Friends.Queries.GetFriends
 {
     public class GetFriendsQueryHandler : IRequestHandler<GetFriendsQuery, List<FriendProfileDto>>
     {
