@@ -6,7 +6,7 @@ using UserService.Application.DTOs.Response;
 using UserService.Domain.Entities;
 using UserService.Domain.Enums;
 
-namespace UserService.Application.Features.Profiles.Commands.AcceptFriendRequest
+namespace UserService.Application.Features.Friends.Commands.AcceptFriendRequest
 {
     public class AcceptFriendRequestCommandHandler : IRequestHandler<AcceptFriendRequestCommand, FriendshipDto>
     {

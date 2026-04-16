@@ -5,9 +5,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UserService.Application.DTOs.Request;
 using UserService.Application.DTOs.Response;
-using UserService.Application.Features.Profiles.Commands.AcceptFriendRequest;
-using UserService.Application.Features.Profiles.Commands.SendFriendRequest;
-using UserService.Application.Features.Profiles.Queries.GetFriends;
+using UserService.Application.Features.Friends.Commands.AcceptFriendRequest;
+using UserService.Application.Features.Friends.Commands.BlockUser;
+using UserService.Application.Features.Friends.Commands.RemoveFriendship;
+using UserService.Application.Features.Friends.Commands.SendFriendRequest;
+using UserService.Application.Features.Friends.Queries.GetFriends;
 using UserService.Domain.Enums;
 
 namespace UserService.API.Controllers
@@ -64,6 +66,29 @@ namespace UserService.API.Controllers
             var requests = await _mediator.Send(query);
 
             return Ok(ApiResponse<List<FriendProfileDto>>.Ok(requests, "Danh sách lời mời kết bạn."));
+        }
+
+        // api for unfriend, or cancel pending request, or decline received request
+        [HttpDelete("{targetUserId}")]
+        public async Task<IActionResult> RemoveFriendship(Guid targetUserId)
+        {
+            var currentUserId = User.GetUserId();
+            var command = new RemoveFriendshipCommand(currentUserId, targetUserId);
+
+            await _mediator.Send(command);
+
+            return Ok(ApiResponse<bool>.Ok(true, "Friendship record removed successfully."));
+        }
+
+        [HttpPost("block/{targetUserId}")]
+        public async Task<IActionResult> BlockUser(Guid targetUserId)
+        {
+            var currentUserId = User.GetUserId();
+            var command = new BlockUserCommand(currentUserId, targetUserId);
+
+            await _mediator.Send(command);
+
+            return Ok(ApiResponse<bool>.Ok(true, "User blocked successfully."));
         }
     }
 }
