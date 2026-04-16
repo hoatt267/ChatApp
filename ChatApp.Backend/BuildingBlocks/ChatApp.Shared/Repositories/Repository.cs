@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using ChatApp.Shared.Domain;
 using ChatApp.Shared.Interfaces;
 using ChatApp.Shared.Wrappers;
 using Microsoft.EntityFrameworkCore;
@@ -21,7 +22,8 @@ namespace ChatApp.Shared.Repositories
         Expression<Func<T, bool>>? predicate = null,
         Func<IQueryable<T>, IQueryable<T>>? include = null,
         Func<IQueryable<T>, IQueryable<T>>? orderBy = null,
-        bool disableTracking = false
+        bool disableTracking = false,
+        bool ignoreQueryFilters = false
     )
         {
             IQueryable<T> queryable = _dbSet.AsQueryable();
@@ -29,6 +31,11 @@ namespace ChatApp.Shared.Repositories
             if (disableTracking)
             {
                 queryable = queryable.AsNoTracking();
+            }
+
+            if (ignoreQueryFilters)
+            {
+                queryable = queryable.IgnoreQueryFilters();
             }
 
             if (include != null)
@@ -59,7 +66,8 @@ namespace ChatApp.Shared.Repositories
             Expression<Func<T, bool>>? predicate = null,
             Func<IQueryable<T>, IQueryable<T>>? include = null,
             Func<IQueryable<T>, IQueryable<T>>? orderBy = null,
-            bool disableTracking = false
+            bool disableTracking = false,
+            bool ignoreQueryFilters = false
         )
         {
             IQueryable<T> queryable = _dbSet.AsQueryable();
@@ -67,6 +75,11 @@ namespace ChatApp.Shared.Repositories
             if (disableTracking)
             {
                 queryable = queryable.AsNoTracking();
+            }
+
+            if (ignoreQueryFilters)
+            {
+                queryable = queryable.IgnoreQueryFilters();
             }
 
             if (include != null)
@@ -99,7 +112,8 @@ namespace ChatApp.Shared.Repositories
             Expression<Func<T, bool>>? predicate = null,
             Func<IQueryable<T>, IQueryable<T>>? include = null,
             Func<IQueryable<T>, IQueryable<T>>? orderBy = null,
-            bool disableTracking = false
+            bool disableTracking = false,
+            bool ignoreQueryFilters = false
         )
         {
             IQueryable<T> queryable = _dbSet.AsQueryable();
@@ -107,6 +121,11 @@ namespace ChatApp.Shared.Repositories
             if (disableTracking)
             {
                 queryable = queryable.AsNoTracking();
+            }
+
+            if (ignoreQueryFilters)
+            {
+                queryable = queryable.IgnoreQueryFilters();
             }
 
             if (include != null)
@@ -193,5 +212,26 @@ namespace ChatApp.Shared.Repositories
 
         public async Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate)
         => await _dbSet.AnyAsync(predicate).ConfigureAwait(false);
+
+        public async Task UpdateAsync(T entity)
+        {
+            _dbSet.Update(entity);
+            await SaveChangesAsync().ConfigureAwait(false);
+        }
+
+        public async Task DeleteAsync(T entity)
+        {
+            if (entity is BaseEntity baseEntity)
+            {
+                baseEntity.MarkAsDeleted();
+                _dbSet.Update(entity);
+            }
+            else
+            {
+                _dbSet.Remove(entity);
+            }
+
+            await SaveChangesAsync().ConfigureAwait(false);
+        }
     }
 }

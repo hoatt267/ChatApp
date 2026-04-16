@@ -10,7 +10,8 @@ namespace ChatApp.Shared.Interfaces
         Expression<Func<T, bool>>? predicate = null,
         Func<IQueryable<T>, IQueryable<T>>? include = null,
         Func<IQueryable<T>, IQueryable<T>>? orderBy = null,
-        bool disableTracking = false
+        bool disableTracking = false,
+        bool ignoreQueryFilters = false
         );
 
         Task<IEnumerable<TResult>> GetListAsync<TResult>(
@@ -18,7 +19,8 @@ namespace ChatApp.Shared.Interfaces
             Expression<Func<T, bool>>? predicate = null,
             Func<IQueryable<T>, IQueryable<T>>? include = null,
             Func<IQueryable<T>, IQueryable<T>>? orderBy = null,
-            bool disableTracking = false
+            bool disableTracking = false,
+            bool ignoreQueryFilters = false
         );
 
         Task<PaginatedList<TResult>> GetPaginatedListAsync<TResult>(
@@ -28,7 +30,8 @@ namespace ChatApp.Shared.Interfaces
             Expression<Func<T, bool>>? predicate = null,
             Func<IQueryable<T>, IQueryable<T>>? include = null,
             Func<IQueryable<T>, IQueryable<T>>? orderBy = null,
-            bool disableTracking = false
+            bool disableTracking = false,
+            bool ignoreQueryFilters = false
         );
 
         Task<T> AddAsync(T entity);
@@ -40,5 +43,7 @@ namespace ChatApp.Shared.Interfaces
         Task SaveChangesAsync();
 
         Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate);
+        Task UpdateAsync(T entity);
+        Task DeleteAsync(T entity);
     }
 }

@@ -13,6 +13,12 @@ namespace ChatApp.Shared.Domain
             UpdatedAt = DateTime.UtcNow;
         }
 
+        public void Restore()
+        {
+            IsDeleted = false;
+            UpdatedAt = DateTime.UtcNow;
+        }
+
         public void UpdateTimestamp()
         {
             UpdatedAt = DateTime.UtcNow;

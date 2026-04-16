@@ -18,6 +18,11 @@ namespace IdentityService.Infrastructure.DatabaseContext
         {
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(IdentityDbContext).Assembly);
             base.OnModelCreating(modelBuilder);
+
+            // GLOBAL QUERY FILTER CHO SOFT DELETE
+            modelBuilder.Entity<User>().HasQueryFilter(u => !u.IsDeleted);
+            modelBuilder.Entity<Role>().HasQueryFilter(r => !r.IsDeleted);
+            modelBuilder.Entity<RefreshToken>().HasQueryFilter(rt => !rt.IsDeleted);
         }
     }
 }

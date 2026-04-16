@@ -15,8 +15,11 @@ namespace ChatService.Infrastructure.DatabaseContext
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-
             modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+
+            modelBuilder.Entity<Conversation>().HasQueryFilter(c => !c.IsDeleted);
+            modelBuilder.Entity<Participant>().HasQueryFilter(p => !p.IsDeleted);
+            modelBuilder.Entity<User>().HasQueryFilter(u => !u.IsDeleted);
         }
     }
 }
