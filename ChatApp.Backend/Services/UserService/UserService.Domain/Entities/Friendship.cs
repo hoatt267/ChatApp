@@ -29,5 +29,22 @@ namespace UserService.Domain.Entities
             Status = FriendshipStatus.Blocked;
             UpdateTimestamp();
         }
+
+        public void UpdateRequester(Guid currentUserId)
+        {
+            if (RequesterId == currentUserId)
+                return;
+
+            if (ReceiverId == currentUserId)
+            {
+                var temp = RequesterId;
+                RequesterId = currentUserId;
+                ReceiverId = temp;
+                UpdateTimestamp();
+                return;
+            }
+
+            throw new InvalidOperationException("Current user must be either the requester or receiver of the friendship.");
+        }
     }
 }
