@@ -2,6 +2,7 @@ import { create } from "zustand";
 import * as signalR from "@microsoft/signalr";
 import { APP_CONFIG } from "../../../config";
 import { useAuthStore } from "../../auth/store/useAuthStore";
+import { toast } from "react-toastify";
 
 export interface OnlineUser {
   userId: string;
@@ -99,6 +100,34 @@ export const useChatStore = create<ChatState>((set, get) => ({
             },
           };
         });
+      },
+    );
+
+    //  Lắng nghe: Có người gửi lời mời kết bạn
+    newConnection.on(
+      "ReceiveFriendRequest",
+      (data: {
+        userId: string;
+        fullName: string;
+        avatarUrl: string;
+        message: string;
+      }) => {
+        console.log("🔔 CÓ LỜI MỜI KẾT BẠN MỚI:", data);
+        // Tại đây bạn có thể dùng thư viện react-toastify hoặc react-hot-toast để bật popup lên:
+        toast.info(data.message);
+
+        // (Tùy chọn) Có thể lưu vào 1 mảng notifications trong store để hiện chấm đỏ ở Navbar
+      },
+    );
+
+    //  Lắng nghe: Lời mời kết bạn đã được đồng ý
+    newConnection.on(
+      "FriendRequestAccepted",
+      (data: { userId: string; fullName: string; message: string }) => {
+        console.log("✅ ĐÃ TRỞ THÀNH BẠN BÈ:", data);
+        toast.success(data.message);
+
+        // (Tùy chọn) Cập nhật lại danh sách bạn bè online nếu cần
       },
     );
   },
