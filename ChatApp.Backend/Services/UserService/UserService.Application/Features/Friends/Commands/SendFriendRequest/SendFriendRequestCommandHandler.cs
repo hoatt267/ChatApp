@@ -1,10 +1,12 @@
 using AutoMapper;
 using ChatApp.Shared.Exceptions;
 using ChatApp.Shared.Interfaces;
+using MassTransit;
 using MediatR;
 using UserService.Application.DTOs.Response;
 using UserService.Domain.Entities;
 using UserService.Domain.Enums;
+using static ChatApp.Shared.Events.FriendshipEvents;
 
 namespace UserService.Application.Features.Friends.Commands.SendFriendRequest
 {
@@ -13,16 +15,19 @@ namespace UserService.Application.Features.Friends.Commands.SendFriendRequest
         private readonly IRepository<UserProfile> _profileRepository;
         private readonly IRepository<Friendship> _friendshipRepository;
         private readonly IMapper _mapper;
+        private readonly IPublishEndpoint _publishEndpoint;
 
         public SendFriendRequestCommandHandler(
             IRepository<UserProfile> profileRepository,
             IRepository<Friendship> friendshipRepository,
-            IMapper mapper
+            IMapper mapper,
+            IPublishEndpoint publishEndpoint
             )
         {
             _profileRepository = profileRepository;
             _friendshipRepository = friendshipRepository;
             _mapper = mapper;
+            _publishEndpoint = publishEndpoint;
         }
 
         public async Task<FriendshipDto> Handle(SendFriendRequestCommand request, CancellationToken cancellationToken)
@@ -65,6 +70,18 @@ namespace UserService.Application.Features.Friends.Commands.SendFriendRequest
             // 4. Nếu chưa có gì, tạo mới request Pending
             var friendship = new Friendship(request.RequesterId, request.ReceiverId);
             await _friendshipRepository.AddAsync(friendship);
+
+            var requesterProfile = await _profileRepository.GetAsync<UserProfile>(
+                predicate: p => p.Id == request.RequesterId
+            );
+
+            await _publishEndpoint.Publish(new FriendRequestSentEvent
+            {
+                RequesterId = request.RequesterId,
+                ReceiverId = request.ReceiverId,
+                RequesterName = requesterProfile?.FullName ?? "Someone",
+                RequesterAvatar = requesterProfile?.AvatarUrl ?? ""
+            }, cancellationToken);
 
             return _mapper.Map<FriendshipDto>(friendship);
         }
