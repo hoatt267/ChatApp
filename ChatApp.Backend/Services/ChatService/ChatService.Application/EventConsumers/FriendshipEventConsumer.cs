@@ -7,7 +7,8 @@ namespace ChatService.Application.EventConsumers
 {
     public class FriendshipEventConsumer :
         IConsumer<FriendRequestSentEvent>,
-        IConsumer<FriendRequestAcceptedEvent>
+        IConsumer<FriendRequestAcceptedEvent>,
+        IConsumer<FriendshipRemovedEvent>
     {
         private readonly INotificationService _notificationService;
 
@@ -23,7 +24,8 @@ namespace ChatService.Application.EventConsumers
                 msg.ReceiverId,
                 msg.RequesterId,
                 msg.RequesterName,
-                msg.RequesterAvatar);
+                msg.RequesterAvatar
+            );
         }
 
         public async Task Consume(ConsumeContext<FriendRequestAcceptedEvent> context)
@@ -32,7 +34,14 @@ namespace ChatService.Application.EventConsumers
             await _notificationService.SendFriendRequestAcceptedAsync(
                 msg.RequesterId,
                 msg.ReceiverId,
-                msg.ReceiverName);
+                msg.ReceiverName
+            );
+        }
+
+        public async Task Consume(ConsumeContext<FriendshipRemovedEvent> context)
+        {
+            var msg = context.Message;
+            await _notificationService.SendFriendshipRemovedAsync(msg.TargetId, msg.ActorId);
         }
     }
 }

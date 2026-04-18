@@ -13,12 +13,13 @@ import ChatHeader from "./ChatHeader";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 import { APP_CONFIG } from "../../../../config";
+import { useSignalRStore } from "../../../../store/useSignalRStore";
 
 export default function ChatRoom() {
   const { conversationId } = useParams<{ conversationId: string }>();
   const [participants, setParticipants] = useState<Participant[]>([]);
   const currentUser = useAuthStore((state) => state.user);
-  const connection = useChatStore((state) => state.connection);
+  const connection = useSignalRStore((state) => state.connection);
   const onlineUsers = useChatStore((state) => state.onlineUsers);
   const typingUsers = useChatStore((state) => state.typingUsers);
   const typingUsersInChat = typingUsers[conversationId || ""] || [];

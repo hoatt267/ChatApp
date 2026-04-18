@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { chatService } from "../../../features/chat/services/chat.service";
 import { useAuthStore } from "../../../features/auth/store/useAuthStore";
-import { useChatStore } from "../../../features/chat/store/useChatStore";
 import type { Conversation, Message } from "../../../features/chat/types";
+import { useSignalRStore } from "../../../store/useSignalRStore";
 
 export default function RecentChats() {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
-  const connection = useChatStore((state) => state.connection);
+  const connection = useSignalRStore((state) => state.connection);
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
 

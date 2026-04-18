@@ -1,5 +1,5 @@
 // File: src/features/auth/components/Register/Register.tsx
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { UserPlus } from "lucide-react";
 import { AxiosError } from "axios";

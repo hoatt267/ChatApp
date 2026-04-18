@@ -70,10 +70,10 @@ namespace UserService.API.Controllers
 
         // api for unfriend, or cancel pending request, or decline received request
         [HttpDelete("{targetUserId}")]
-        public async Task<IActionResult> RemoveFriendship(Guid targetUserId)
+        public async Task<IActionResult> RemoveFriendship(Guid targetUserId, [FromQuery] FriendshipAction actionType)
         {
             var currentUserId = User.GetUserId();
-            var command = new RemoveFriendshipCommand(currentUserId, targetUserId);
+            var command = new RemoveFriendshipCommand(currentUserId, targetUserId, actionType);
 
             await _mediator.Send(command);
 

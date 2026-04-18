@@ -1,4 +1,3 @@
-// File: src/routes/index.tsx
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import Login from "../features/auth/components/Login/Login";
 import ProtectedRoute from "./ProtectedRoute";
@@ -6,6 +5,7 @@ import PublicRoute from "./PublicRoute";
 import Register from "../features/auth/components/Register/Register";
 import MainLayout from "../layouts/MainLayout";
 import ChatRoom from "../features/chat/components/ChatRoom/ChatRoom";
+import FriendsPage from "../features/friends/components/FriendsPage";
 
 export const router = createBrowserRouter([
   {
@@ -50,6 +50,10 @@ export const router = createBrowserRouter([
       {
         path: "chat/:conversationId",
         element: <ChatRoom />,
+      },
+      {
+        path: "friends",
+        element: <FriendsPage />,
       },
     ],
   },
