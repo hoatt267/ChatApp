@@ -1,4 +1,3 @@
-import React from "react";
 import type { Participant, ReadReceipt } from "../../types";
 import Modal from "../../../../components/ui/Modal";
 

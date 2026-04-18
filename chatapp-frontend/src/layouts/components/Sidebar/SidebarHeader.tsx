@@ -1,14 +1,14 @@
 import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, User as UserIcon, Camera, Loader2 } from "lucide-react";
+import { LogOut, User as UserIcon, Camera, Loader2, Users } from "lucide-react";
 import { useAuthStore } from "../../../features/auth/store/useAuthStore";
-import { useChatStore } from "../../../features/chat/store/useChatStore";
 import { userService } from "../../../features/auth/services/user.service";
+import { useSignalRStore } from "../../../store/useSignalRStore";
 
 export default function SidebarHeader() {
   const navigate = useNavigate();
   const { user, setUser, logout: clearStore } = useAuthStore();
-  const { disconnect } = useChatStore();
+  const { disconnect } = useSignalRStore();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -96,12 +96,22 @@ export default function SidebarHeader() {
         </div>
       </div>
 
-      <button
-        onClick={handleLogout}
-        className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
-      >
-        <LogOut size={20} />
-      </button>
+      <div className="flex gap-2">
+        <button
+          onClick={() => navigate("/friends")}
+          className="p-2 text-gray-500 hover:bg-blue-50 hover:text-blue-600 rounded-full transition-colors"
+          title="Quản lý bạn bè"
+        >
+          <Users size={20} />
+        </button>
+        <button
+          onClick={handleLogout}
+          className="p-2 text-gray-500 hover:bg-red-50 hover:text-red-600 rounded-full transition-colors"
+          title="Đăng xuất"
+        >
+          <LogOut size={20} />
+        </button>
+      </div>
     </div>
   );
 }

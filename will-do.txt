@@ -44,7 +44,7 @@ Tính năng 4: Cuộn trang có phân trang (Pagination) mượt mà hơn cho da
 đổi tên nhóm chat, avt nhóm chat, thêm/xóa người
 ko có 2 người online không cho tạo group chat? => nếu fix thì chia component ra group riêng, online riêng
 đổi avt thì call api conversation
-cap nhat lai danh sach ban be online
+thay vi lay all user online thi chi lay danh sach ban be online
 
 xóa key chat_presence => thay bằng heartbeat + TTL
 

@@ -16,5 +16,12 @@ namespace ChatApp.Shared.Events
             public Guid ReceiverId { get; init; }
             public string ReceiverName { get; init; } = string.Empty;
         }
+
+        // Event này dùng chung cho: Hủy kết bạn, Từ chối, Hủy lời mời
+        public record FriendshipRemovedEvent
+        {
+            public Guid ActorId { get; init; }   // Người thực hiện nút bấm
+            public Guid TargetId { get; init; }  // Người bị tác động
+        }
     }
 }

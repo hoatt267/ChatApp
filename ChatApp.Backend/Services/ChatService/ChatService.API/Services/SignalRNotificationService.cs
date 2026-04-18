@@ -35,5 +35,11 @@ namespace ChatService.API.Services
                     Message = $"{receiverName} accepted your friend request."
                 });
         }
+
+        public async Task SendFriendshipRemovedAsync(Guid targetId, Guid actorId)
+        {
+            await _hubContext.Clients.User(targetId.ToString())
+                .SendAsync("FriendshipRemoved", new { UserId = actorId });
+        }
     }
 }

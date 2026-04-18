@@ -4,5 +4,6 @@ namespace ChatService.Application.Interfaces
     {
         Task SendFriendRequestReceivedAsync(Guid receiverId, Guid requesterId, string requesterName, string requesterAvatar);
         Task SendFriendRequestAcceptedAsync(Guid requesterId, Guid receiverId, string receiverName);
+        Task SendFriendshipRemovedAsync(Guid targetId, Guid actorId);
     }
 }

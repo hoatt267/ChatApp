@@ -1,4 +1,3 @@
-// File: src/layouts/MainLayout.tsx
 import { useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 
@@ -9,11 +8,18 @@ import { useChatStore } from "../features/chat/store/useChatStore";
 import SidebarHeader from "./components/Sidebar/SidebarHeader";
 import OnlineUsers from "./components/Sidebar/OnlineUsers";
 import RecentChats from "./components/Sidebar/RecentChats";
+import { useSignalRStore } from "../store/useSignalRStore";
+import { useChatEvents } from "../features/chat/hooks/useChatEvents";
+import { useFriendEvents } from "../features/friends/hooks/useFriendEvents";
 
 export default function MainLayout() {
   const navigate = useNavigate();
   const { user, setUser, logout: clearStore } = useAuthStore();
-  const { connect, disconnect } = useChatStore();
+  const { connection, connect, disconnect } = useSignalRStore();
+  const { clearChatState } = useChatStore();
+
+  useChatEvents(connection);
+  useFriendEvents(connection);
 
   const [loading, setLoading] = useState(!user);
 
@@ -35,8 +41,9 @@ export default function MainLayout() {
 
     return () => {
       disconnect();
+      clearChatState();
     };
-  }, [setUser, clearStore, navigate, connect, disconnect]);
+  }, [setUser, clearStore, navigate, connect, disconnect, clearChatState]);
 
   if (loading) {
     return (

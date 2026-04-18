@@ -1,7 +1,9 @@
 using ChatApp.Shared.Exceptions;
 using ChatApp.Shared.Interfaces;
+using MassTransit;
 using MediatR;
 using UserService.Domain.Entities;
+using static ChatApp.Shared.Events.FriendshipEvents;
 
 namespace UserService.Application.Features.Friends.Commands.BlockUser
 {
@@ -9,11 +11,13 @@ namespace UserService.Application.Features.Friends.Commands.BlockUser
     {
         private readonly IRepository<Friendship> _friendshipRepository;
         private readonly IRepository<UserProfile> _userProfileRepository;
+        private readonly IPublishEndpoint _publishEndpoint;
 
-        public BlockUserCommandHandler(IRepository<Friendship> friendshipRepository, IRepository<UserProfile> userProfileRepository)
+        public BlockUserCommandHandler(IRepository<Friendship> friendshipRepository, IRepository<UserProfile> userProfileRepository, IPublishEndpoint publishEndpoint)
         {
             _friendshipRepository = friendshipRepository;
             _userProfileRepository = userProfileRepository;
+            _publishEndpoint = publishEndpoint;
         }
 
         public async Task<bool> Handle(BlockUserCommand request, CancellationToken cancellationToken)
@@ -43,6 +47,12 @@ namespace UserService.Application.Features.Friends.Commands.BlockUser
                 newFriendship.Block();
                 await _friendshipRepository.AddAsync(newFriendship);
             }
+
+            await _publishEndpoint.Publish(new FriendshipRemovedEvent
+            {
+                ActorId = request.CurrentUserId,
+                TargetId = request.TargetUserId
+            });
 
             return true;
         }
