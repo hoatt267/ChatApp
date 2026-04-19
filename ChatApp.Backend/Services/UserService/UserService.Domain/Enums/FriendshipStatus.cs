@@ -4,6 +4,7 @@ namespace UserService.Domain.Enums
     {
         Pending,
         Accepted,
-        Blocked
+        Blocked,
+        None // Không có mối quan hệ gì
     }
 }

@@ -26,6 +26,19 @@ namespace UserService.Infrastructure.DatabaseContext
                 .HasIndex(f => new { f.RequesterId, f.ReceiverId })
                 .IsUnique()
                 .HasFilter("\"IsDeleted\" = false");
+
+            // ==========================================
+            // 3. CẤU HÌNH TÌM KIẾM (FUZZY SEARCH INDEX)
+            // ==========================================
+
+            // Bật Extension Trigram của PostgreSQL
+            modelBuilder.HasPostgresExtension("pg_trgm");
+
+            // Đánh GIN Index cho cột FullName
+            modelBuilder.Entity<UserProfile>()
+                .HasIndex(p => p.FullName)
+                .HasMethod("gin")
+                .HasOperators("gin_trgm_ops"); // Khai báo dùng toán tử Trigram
         }
     }
 }
