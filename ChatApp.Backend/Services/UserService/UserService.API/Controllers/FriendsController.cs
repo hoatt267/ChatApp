@@ -10,6 +10,8 @@ using UserService.Application.Features.Friends.Commands.BlockUser;
 using UserService.Application.Features.Friends.Commands.RemoveFriendship;
 using UserService.Application.Features.Friends.Commands.SendFriendRequest;
 using UserService.Application.Features.Friends.Queries.GetFriends;
+using UserService.Application.Features.Friends.Queries.GetSuggestedUsers;
+using UserService.Application.Features.Friends.Queries.SearchUsers;
 using UserService.Domain.Enums;
 
 namespace UserService.API.Controllers
@@ -89,6 +91,22 @@ namespace UserService.API.Controllers
             await _mediator.Send(command);
 
             return Ok(ApiResponse<bool>.Ok(true, "User blocked successfully."));
+        }
+
+        [HttpGet("suggestions")]
+        public async Task<IActionResult> GetSuggestions([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            var currentUserId = User.GetUserId();
+            var result = await _mediator.Send(new GetSuggestedUsersQuery(currentUserId, pageNumber, pageSize));
+            return Ok(ApiResponse<PaginatedList<DiscoverUserDto>>.Ok(result));
+        }
+
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchUsers([FromQuery] string keyword, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20)
+        {
+            var currentUserId = User.GetUserId();
+            var result = await _mediator.Send(new SearchUsersQuery(currentUserId, keyword, pageNumber, pageSize));
+            return Ok(ApiResponse<PaginatedList<DiscoverUserDto>>.Ok(result));
         }
     }
 }
