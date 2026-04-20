@@ -4,3 +4,10 @@ export interface ApiResponse<T> {
   data: T;
   errors: Record<string, string[]>;
 }
+
+export interface PaginatedList<T> {
+  items: T[];
+  count: number;
+  pageNumber: number;
+  pageSize: number;
+}

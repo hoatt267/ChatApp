@@ -33,6 +33,8 @@ namespace UserService.Infrastructure.DatabaseContext
 
             // Bật Extension Trigram của PostgreSQL
             modelBuilder.HasPostgresExtension("pg_trgm");
+            // Bật Extension Unaccent để loại bỏ dấu khi tìm kiếm
+            modelBuilder.HasPostgresExtension("unaccent");
 
             // Đánh GIN Index cho cột FullName
             modelBuilder.Entity<UserProfile>()

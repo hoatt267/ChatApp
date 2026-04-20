@@ -28,7 +28,7 @@ namespace UserService.API.Controllers
             _mediator = mediator;
         }
 
-        [HttpPost("request")]
+        [HttpPost("requests")]
         public async Task<IActionResult> SendRequest([FromBody] SendRequestDto dto)
         {
             var currentUserId = User.GetUserId();
