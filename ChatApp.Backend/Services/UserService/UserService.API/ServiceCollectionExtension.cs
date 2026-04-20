@@ -11,7 +11,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using UserService.Application.EventConsumers;
+using UserService.Application.Interfaces;
 using UserService.Infrastructure.DatabaseContext;
+using UserService.Infrastructure.Repositories;
 
 namespace UserService.API
 {
@@ -43,6 +45,8 @@ namespace UserService.API
 
             // Đăng ký FluentValidation
             builder.Services.AddValidatorsFromAssembly(applicationAssembly);
+
+            builder.Services.AddScoped<IUserProfileRepository, UserProfileRepository>();
         }
 
         private static void RegisterInfrastructure(WebApplicationBuilder builder)

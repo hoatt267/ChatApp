@@ -24,3 +24,22 @@ export const FriendshipAction = {
 
 export type FriendshipAction =
   (typeof FriendshipAction)[keyof typeof FriendshipAction];
+
+export const FriendshipStatus = {
+  Pending: 0,
+  Accepted: 1,
+  Blocked: 2,
+  None: 3,
+};
+
+export type FriendshipStatus =
+  (typeof FriendshipStatus)[keyof typeof FriendshipStatus];
+
+export interface DiscoverUser {
+  userId: string;
+  fullName: string;
+  email: string;
+  avatarUrl?: string;
+  bio?: string;
+  friendshipStatus: FriendshipStatus;
+}
