@@ -2,6 +2,7 @@ using ChatApp.Shared.Interfaces;
 using MediatR;
 using UserService.Application.DTOs.Response;
 using UserService.Domain.Entities;
+using UserService.Domain.Enums;
 
 namespace UserService.Application.Features.Friends.Queries.GetFriends
 {
@@ -19,9 +20,12 @@ namespace UserService.Application.Features.Friends.Queries.GetFriends
         public async Task<List<FriendProfileDto>> Handle(GetFriendsQuery request, CancellationToken cancellationToken)
         {
             var friendships = await _friendshipRepository.GetListAsync<Friendship>(
-                predicate: f => (f.RequesterId == request.CurrentUserId || f.ReceiverId == request.CurrentUserId)
-                             && f.Status == request.Status
-            );
+                predicate: f => f.Status == request.Status &&
+                (
+                    (request.Status == FriendshipStatus.Blocked && f.RequesterId == request.CurrentUserId) ||
+                    (request.Status != FriendshipStatus.Blocked && (f.RequesterId == request.CurrentUserId || f.ReceiverId == request.CurrentUserId))
+                )
+    );
 
             if (!friendships.Any()) return new List<FriendProfileDto>();
 

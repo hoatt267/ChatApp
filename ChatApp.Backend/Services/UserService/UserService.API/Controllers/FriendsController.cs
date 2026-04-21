@@ -70,6 +70,16 @@ namespace UserService.API.Controllers
             return Ok(ApiResponse<List<FriendProfileDto>>.Ok(requests, "Danh sách lời mời kết bạn."));
         }
 
+        [HttpGet("blocked")]
+        public async Task<IActionResult> GetBlockedUsers()
+        {
+            var currentUserId = User.GetUserId();
+            var query = new GetFriendsQuery(currentUserId, FriendshipStatus.Blocked);
+            var blockedUsers = await _mediator.Send(query);
+
+            return Ok(ApiResponse<List<FriendProfileDto>>.Ok(blockedUsers, "Danh sách người dùng đã chặn."));
+        }
+
         // api for unfriend, or cancel pending request, or decline received request
         [HttpDelete("{targetUserId}")]
         public async Task<IActionResult> RemoveFriendship(Guid targetUserId, [FromQuery] FriendshipAction actionType)
