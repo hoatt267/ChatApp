@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { Users, UserPlus, Compass } from "lucide-react";
+import { Users, UserPlus, Compass, Lock } from "lucide-react";
 import FriendList from "./FriendList";
 import PendingList from "./PendingList";
 import DiscoverTab from "./Discover/DiscoverTab";
+import BlockList from "./BlockList";
 
 export default function FriendsPage() {
   const [activeTab, setActiveTab] = useState<
-    "friends" | "pending" | "discover"
+    "friends" | "pending" | "discover" | "blocked"
   >("friends");
 
   return (
@@ -49,6 +50,16 @@ export default function FriendsPage() {
           >
             <Compass size={18} /> Khám phá
           </button>
+          <button
+            onClick={() => setActiveTab("blocked")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+              activeTab === "blocked"
+                ? "bg-blue-50 text-blue-600"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            <Lock size={18} /> Danh sách chặn
+          </button>
         </div>
       </div>
 
@@ -59,6 +70,8 @@ export default function FriendsPage() {
             <FriendList />
           ) : activeTab === "pending" ? (
             <PendingList />
+          ) : activeTab === "blocked" ? (
+            <BlockList />
           ) : (
             <DiscoverTab />
           )}

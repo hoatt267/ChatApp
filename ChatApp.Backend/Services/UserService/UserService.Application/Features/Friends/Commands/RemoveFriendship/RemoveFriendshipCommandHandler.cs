@@ -28,6 +28,15 @@ namespace UserService.Application.Features.Friends.Commands.RemoveFriendship
             if (friendship == null)
                 throw new NotFoundException("Friendship record not found");
 
+            if (friendship.Status == FriendshipStatus.Blocked)
+            {
+                // Nếu trạng thái đang là Blocked, BẮT BUỘC người gọi API phải là người đã nhấn nút Chặn (Requester)
+                if (friendship.RequesterId != request.CurrentUserId)
+                {
+                    throw new BadRequestException("Bạn không có quyền bỏ chặn người dùng này!");
+                }
+            }
+
             if (request.ActionType == FriendshipAction.Cancel || request.ActionType == FriendshipAction.Reject)
             {
                 if (friendship.Status == FriendshipStatus.Accepted)

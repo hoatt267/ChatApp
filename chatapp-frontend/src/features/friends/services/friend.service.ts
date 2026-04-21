@@ -55,4 +55,12 @@ export const friendService = {
       `/friends/block/${targetUserId}`,
     );
   },
+
+  // 7. Lấy danh sách người dùng đã bị block
+  getBlockedUsers: async () => {
+    return await axiosClient.get<
+      ApiResponse<FriendProfile[]>,
+      ApiResponse<FriendProfile[]>
+    >("/friends/blocked");
+  },
 };
