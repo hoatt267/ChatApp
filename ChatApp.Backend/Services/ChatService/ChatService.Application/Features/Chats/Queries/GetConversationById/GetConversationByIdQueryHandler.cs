@@ -1,5 +1,6 @@
 using ChatApp.Shared.Exceptions;
 using ChatApp.Shared.Interfaces;
+using ChatApp.Shared.Protos;
 using ChatService.Application.DTOs;
 using ChatService.Application.Interfaces;
 using ChatService.Domain.Entities;
@@ -14,12 +15,19 @@ namespace ChatService.Application.Features.Chats.Queries.GetConversationById
         private readonly IRepository<Conversation> _conversationRepository;
         private readonly IConversationEnricher _conversationEnricher;
         private readonly IDistributedCache _cache;
+        private readonly FriendshipGrpcService.FriendshipGrpcServiceClient _grpcClient;
 
-        public GetConversationByIdQueryHandler(IRepository<Conversation> conversationRepository, IConversationEnricher conversationEnricher, IDistributedCache cache)
+        public GetConversationByIdQueryHandler(
+            IRepository<Conversation> conversationRepository,
+            IConversationEnricher conversationEnricher,
+            IDistributedCache cache,
+            FriendshipGrpcService.FriendshipGrpcServiceClient grpcClient
+            )
         {
             _conversationRepository = conversationRepository;
             _conversationEnricher = conversationEnricher;
             _cache = cache;
+            _grpcClient = grpcClient;
         }
 
         public async Task<ConversationDto> Handle(GetConversationByIdQuery request, CancellationToken cancellationToken)
@@ -56,6 +64,34 @@ namespace ChatService.Application.Features.Chats.Queries.GetConversationById
                 if (isBlocked1 != null || isBlocked2 != null)
                 {
                     conversationDto = conversationDto with { IsBlocked = true };
+                }
+                // TÌNH HUỐNG 2: CACHE MISS (Redis trống rỗng) -> CẦU CỨU gRPC
+                else
+                {
+                    bool isActuallyBlocked = false;
+
+                    try
+                    {
+                        var grpcRequest = new CheckBlockRequest { UserId1 = user1.ToString(), UserId2 = user2.ToString() };
+
+                        // Gọi sang UserService với tốc độ ánh sáng!
+                        var grpcResponse = await _grpcClient.CheckBlockStatusAsync(grpcRequest);
+                        isActuallyBlocked = grpcResponse.IsBlocked;
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log lỗi nếu UserService bị sập, tránh crash ChatService
+                        // _logger.LogError(ex, "Lỗi khi gọi gRPC sang UserService");
+                        isActuallyBlocked = false;
+                    }
+
+                    // Nếu gRPC bảo CÓ BLOCK -> Cập nhật UI & Lưu ngược lại Redis để lần sau không gọi gRPC nữa
+                    if (isActuallyBlocked)
+                    {
+                        conversationDto = conversationDto with { IsBlocked = true };
+                        // Trám lại lỗ hổng Redis
+                        await _cache.SetStringAsync($"block:{user1}:{user2}", "1");
+                    }
                 }
             }
 

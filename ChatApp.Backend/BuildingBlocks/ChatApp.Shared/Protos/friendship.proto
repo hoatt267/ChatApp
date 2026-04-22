@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+// Khai báo namespace để C# sinh ra code tương ứng
+option csharp_namespace = "ChatApp.Shared.Protos";
+package friendship;
+
+// Định nghĩa Service
+service FriendshipGrpcService {
+  rpc CheckBlockStatus (CheckBlockRequest) returns (CheckBlockResponse);
+}
+
+// Định nghĩa dữ liệu gửi đi (Request)
+message CheckBlockRequest {
+  string userId1 = 1;
+  string userId2 = 2;
+}
+
+// Định nghĩa dữ liệu trả về (Response)
+message CheckBlockResponse {
+  bool isBlocked = 1;
+}
