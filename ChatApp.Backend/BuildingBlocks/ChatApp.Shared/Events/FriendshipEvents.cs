@@ -23,5 +23,17 @@ namespace ChatApp.Shared.Events
             public Guid ActorId { get; init; }   // Người thực hiện nút bấm
             public Guid TargetId { get; init; }  // Người bị tác động
         }
+
+        public record UserBlockedEvent
+        {
+            public Guid BlockerId { get; init; }
+            public Guid BlockedId { get; init; }
+        }
+
+        public record UserUnblockedEvent
+        {
+            public Guid UnblockerId { get; init; }
+            public Guid UnblockedId { get; init; }
+        }
     }
 }

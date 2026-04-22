@@ -44,11 +44,6 @@ export const useDiscover = () => {
     }
   }, []);
 
-  // Gọi lần đầu
-  useEffect(() => {
-    fetchSuggestions(1, false);
-  }, [fetchSuggestions]);
-
   // 3. LẮNG NGHE REFRESH TRIGGER CỦA SIGNALR
   useEffect(() => {
     setSuggestionPage(1); // Reset về trang 1

@@ -54,6 +54,12 @@ namespace UserService.Application.Features.Friends.Commands.BlockUser
                 TargetId = request.TargetUserId
             });
 
+            await _publishEndpoint.Publish(new UserBlockedEvent
+            {
+                BlockerId = request.CurrentUserId,
+                BlockedId = request.TargetUserId
+            });
+
             return true;
         }
     }

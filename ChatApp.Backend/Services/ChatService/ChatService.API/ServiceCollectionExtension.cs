@@ -67,6 +67,10 @@ namespace ChatService.API
                 {
                     options.Configuration.ChannelPrefix = "ChatApp"; // Đặt tên prefix để không đụng hàng với app khác trong cùng Redis
                 });
+            builder.Services.AddStackExchangeRedisCache(options =>
+                {
+                    options.Configuration = redisConnectionString;
+                });
 
             //Register RabbitMQ - Consumer
             builder.Services.AddMassTransit(x =>
@@ -75,6 +79,8 @@ namespace ChatService.API
                     x.AddConsumer<UserCreatedEventConsumer>();
                     x.AddConsumer<UserUpdatedEventConsumer>();
                     x.AddConsumer<FriendshipEventConsumer>();
+                    x.AddConsumer<UserBlockedEventConsumer>();
+                    x.AddConsumer<UserUnblockedEventConsumer>();
 
                     // 2. CẤU HÌNH KẾT NỐI RABBITMQ
                     x.UsingRabbitMq((context, cfg) =>
@@ -96,6 +102,14 @@ namespace ChatService.API
                         cfg.ReceiveEndpoint("chat-service-friendship-updated", e =>
                         {
                             e.ConfigureConsumer<FriendshipEventConsumer>(context);
+                        });
+                        cfg.ReceiveEndpoint("chat-service-user-blocked", e =>
+                        {
+                            e.ConfigureConsumer<UserBlockedEventConsumer>(context);
+                        });
+                        cfg.ReceiveEndpoint("chat-service-user-unblocked", e =>
+                        {
+                            e.ConfigureConsumer<UserUnblockedEventConsumer>(context);
                         });
 
                         // Lệnh này cực kỳ quan trọng: Nó tự động rà soát các Consumer bạn đã đăng ký

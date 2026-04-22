@@ -11,6 +11,7 @@ export interface Conversation {
   createdAt: string;
   participants: Participant[];
   lastMessage?: Message;
+  isBlocked?: boolean;
 }
 
 export const MessageType = {
