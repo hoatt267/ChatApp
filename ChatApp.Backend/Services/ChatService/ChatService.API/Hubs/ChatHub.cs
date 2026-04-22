@@ -112,6 +112,10 @@ public class ChatHub : Hub
                 await Clients.Users(participantUserIds).SendAsync("ReceiveMessage", apiResponse);
             }
         }
+        catch (ForbiddenException ex)
+        {
+            await Clients.Caller.SendAsync("ReceiveError", ex.Message);
+        }
         catch (CustomValidationException ex)
         {
             var firstError = ex.Errors.Values.FirstOrDefault()?.FirstOrDefault() ?? "Invalid request data.";

@@ -48,13 +48,26 @@ namespace UserService.Application.Features.Friends.Commands.RemoveFriendship
                     throw new BadRequestException("Hai bạn chưa phải là bạn bè!");
             }
 
+            bool isUnblocking = friendship.Status == FriendshipStatus.Blocked;
+
             await _friendshipRepository.DeleteAsync(friendship);
 
-            await _publishEndpoint.Publish(new FriendshipRemovedEvent
+            if (isUnblocking)
             {
-                ActorId = request.CurrentUserId,
-                TargetId = request.TargetUserId
-            });
+                await _publishEndpoint.Publish(new UserUnblockedEvent
+                {
+                    UnblockerId = request.CurrentUserId,
+                    UnblockedId = request.TargetUserId
+                });
+            }
+            else
+            {
+                await _publishEndpoint.Publish(new FriendshipRemovedEvent
+                {
+                    ActorId = request.CurrentUserId,
+                    TargetId = request.TargetUserId
+                });
+            }
 
             return true;
         }

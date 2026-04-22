@@ -8,6 +8,7 @@ namespace ChatService.Application.DTOs
         bool IsGroup,
         DateTime CreatedAt,
         IEnumerable<ParticipantDto> Participants,
-        MessageDto? LastMessage = null
+        MessageDto? LastMessage = null,
+        bool IsBlocked = false
     );
 }
