@@ -38,6 +38,7 @@ Tính năng 1: Chức năng Thu hồi tin nhắn (Unsend message).
 Tính năng 2: Chức năng Trích dẫn / Trả lời tin nhắn (Reply message).
 
 Tính năng 3: Thả cảm xúc (Reactions: ❤️, 😂, 👍) vào từng bong bóng chat.
+gim tin nhan, chuyen tiep tin nhan, tag ten @, tim kiem tin nhan, hien thi link thu nho, kho media, calling
 
 Tính năng 4: Cuộn trang có phân trang (Pagination) mượt mà hơn cho danh sách ngoài Sidebar (RecentChats), vì nếu sau này có 1000 phòng chat thì load 1 lần sẽ hơi nặng.
 ==============================================================================================================
@@ -45,8 +46,11 @@ Tính năng 4: Cuộn trang có phân trang (Pagination) mượt mà hơn cho da
 ko có 2 người online không cho tạo group chat? => nếu fix thì chia component ra group riêng, online riêng
 đổi avt thì call api conversation
 thay vi lay all user online thi chi lay danh sach ban be online
+rate limiting
+tich hop log
 
 xóa key chat_presence => thay bằng heartbeat + TTL
+// (Sink của Application Insights ta sẽ mở khóa khi lên Azure)
 
 ========================================================================================================
 dotnet ef database update -p Services/UserService/UserService.Infrastructure/UserService.Infrastructure.csproj -s Services/UserService/UserService.API/UserService.API.csproj

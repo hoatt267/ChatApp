@@ -3,13 +3,36 @@ using ChatApp.Shared.Wrappers;
 using ChatApp.Shared.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 
 namespace ChatApp.Shared.Middlewares
 {
     public class GlobalExceptionHandler : IExceptionHandler
     {
+        private readonly ILogger<GlobalExceptionHandler> _logger;
+        public GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger)
+        {
+            _logger = logger;
+        }
         public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
         {
+            if (
+                exception is not CustomValidationException &&
+                exception is not BadRequestException &&
+                exception is not NotFoundException &&
+                exception is not ForbiddenException
+                )
+            {
+                var rootCause = exception.GetBaseException().Message;
+
+                _logger.LogError(exception, "🚨 Lỗi hệ thống nghiêm trọng: {Message} | Lỗi gốc: {RootCause}", exception.Message, rootCause);
+            }
+            else
+            {
+                // 🌟 NẾU LÀ LỖI NGHIỆP VỤ (400, 403, 404) -> GHI LẠI MỨC ĐỘ WARNING (Màu Vàng)
+                _logger.LogWarning(exception, "⚠️ Lỗi nghiệp vụ: {Message}", exception.Message);
+            }
+
             var response = new ApiResponse<object> { Success = false };
 
             // Phân loại lỗi

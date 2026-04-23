@@ -8,6 +8,8 @@
 *.suo
 appsettings.Development.json
 appsettings.*.json
+**/Logs/
+*.log
 
 # =========================
 # ReactJS Frontend 

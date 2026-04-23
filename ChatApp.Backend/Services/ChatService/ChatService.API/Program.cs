@@ -1,14 +1,20 @@
 using ChatApp.Shared.Middlewares;
 using ChatService.API;
 using ChatService.API.Hubs;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Host.UseSerilog((context, loggerConfiguration) =>
+{
+    loggerConfiguration.ReadFrom.Configuration(context.Configuration);
+});
 
 builder.Services.AddControllers();
 
 builder.RegisterExtension();
 
 var app = builder.Build();
+app.UseSerilogRequestLogging();
 
 app.UseExceptionHandler();
 
