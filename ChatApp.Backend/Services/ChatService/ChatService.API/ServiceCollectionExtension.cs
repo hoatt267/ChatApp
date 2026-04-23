@@ -1,5 +1,6 @@
 using ChatApp.Shared.Interfaces;
 using ChatApp.Shared.Middlewares;
+using ChatApp.Shared.Protos;
 using ChatApp.Shared.Repositories;
 using ChatApp.Shared.Services;
 using ChatService.API.Services;
@@ -170,6 +171,18 @@ namespace ChatService.API
             // {
             //     cfg.AddMaps(typeof(ChatMappingProfile).Assembly);
             // });
+
+            builder.Services.AddGrpcClient<FriendshipGrpcService.FriendshipGrpcServiceClient>(options =>
+            {
+                // 👉 ĐỌC TỪ APPSETTINGS.JSON
+                options.Address = new Uri(builder.Configuration["GrpcUrls:UserService"]!);
+            })
+            .ConfigurePrimaryHttpMessageHandler(() =>
+            {
+                var handler = new HttpClientHandler();
+                handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+                return handler;
+            });
 
             // Đăng ký MediatR (quét command trong tầng Application)
             builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(SendMessageCommand).Assembly));

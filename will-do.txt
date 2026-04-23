@@ -52,3 +52,5 @@ xóa key chat_presence => thay bằng heartbeat + TTL
 dotnet ef database update -p Services/UserService/UserService.Infrastructure/UserService.Infrastructure.csproj -s Services/UserService/UserService.API/UserService.API.csproj
 
 dotnet ef database update -p Services/IdentityService/IdentityService.Infrastructure/IdentityService.Infrastructure.csproj -s Services/IdentityService/IdentityService.API/IdentityService.API.csproj
+
+dotnet add Services/UserService/UserService.API package Grpc.AspNetCore
