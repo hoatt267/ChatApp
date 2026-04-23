@@ -49,7 +49,8 @@
     "compounds": [
         {
             "name": "🚀 RUN ALL SERVICES",
-            "configurations": ["Identity API", "User API", "Chat API", "API Gateway"]
+            "configurations": ["Identity API", "User API", "Chat API", "API Gateway"],
+            "stopAll": true
         }
     ]
 }
