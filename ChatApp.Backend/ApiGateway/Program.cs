@@ -30,5 +30,6 @@ app.UseCors("CorsPolicy");
 
 // Kích hoạt Middleware của YARP để nó bắt đầu lắng nghe và chuyển tiếp request
 app.MapReverseProxy();
+app.MapGet("/health", () => Results.Ok("ok"));
 
 app.Run();

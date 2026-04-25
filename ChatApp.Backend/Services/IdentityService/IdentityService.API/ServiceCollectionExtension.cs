@@ -57,15 +57,20 @@ namespace IdentityService.API
                 cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
             });
 
+            var rabbitHost = builder.Configuration["RabbitMQ:Host"] ?? "localhost";
+            var rabbitVirtualHost = builder.Configuration["RabbitMQ:VirtualHost"] ?? "/";
+            var rabbitUsername = builder.Configuration["RabbitMQ:Username"] ?? "guest";
+            var rabbitPassword = builder.Configuration["RabbitMQ:Password"] ?? "guest";
+
             // Register RabbitMQ
             builder.Services.AddMassTransit(x =>
             {
                 x.UsingRabbitMq((context, cfg) =>
                 {
-                    cfg.Host("localhost", "/", h =>
+                    cfg.Host(rabbitHost, rabbitVirtualHost, h =>
                     {
-                        h.Username("guest");
-                        h.Password("guest");
+                        h.Username(rabbitUsername);
+                        h.Password(rabbitPassword);
                     });
 
                     cfg.ConfigureEndpoints(context);
