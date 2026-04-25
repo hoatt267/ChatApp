@@ -1,0 +1,317 @@
+name: chatapp
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+x-service-defaults: &service-defaults
+  restart: unless-stopped
+  init: true
+  logging: *default-logging
+
+x-dotnet-env: &dotnet-env
+  ASPNETCORE_ENVIRONMENT: Production
+  DOTNET_EnableDiagnostics: "0"
+
+services:
+  postgres:
+    <<: *service-defaults
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-chatapp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-chatapp_dev_password}
+      POSTGRES_DB: postgres
+      IDENTITY_DB_NAME: ${IDENTITY_DB_NAME:-identity_db}
+      USER_DB_NAME: ${USER_DB_NAME:-user_db}
+      CHAT_DB_NAME: ${CHAT_DB_NAME:-chat_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-chatapp} -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - backend
+
+  redis:
+    <<: *service-defaults
+    image: redis:7.4-alpine
+    command:
+      [
+        "redis-server",
+        "--appendonly",
+        "yes",
+        "--save",
+        "60",
+        "1000",
+        "--maxmemory-policy",
+        "allkeys-lru",
+      ]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    networks:
+      - backend
+
+  rabbitmq:
+    <<: *service-defaults
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-chatapp}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-chatapp_dev_password}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_DEFAULT_VHOST:-/}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    ports:
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    networks:
+      - backend
+
+  mongo:
+    <<: *service-defaults
+    image: mongo:7.0
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-chatapp}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-chatapp_dev_password}
+    command: ["--bind_ip_all"]
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "echo 'db.runCommand({ ping: 1 })' | mongosh mongodb://127.0.0.1:27017/admin --quiet >/dev/null 2>&1",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 25s
+    networks:
+      - backend
+
+  azurite:
+    <<: *service-defaults
+    image: mcr.microsoft.com/azure-storage/azurite:3.35.0
+    command:
+      [
+        "azurite",
+        "--blobHost",
+        "0.0.0.0",
+        "--blobPort",
+        "10000",
+        "--skipApiVersionCheck",
+      ]
+    volumes:
+      - azurite_data:/data
+    ports:
+      - "${AZURITE_BLOB_PORT:-10000}:10000"
+    networks:
+      - backend
+
+  identity-service:
+    <<: *service-defaults
+    build:
+      context: ./ChatApp.Backend
+      dockerfile: Services/IdentityService/IdentityService.API/Dockerfile
+      args:
+        BUILD_CONFIGURATION: Release
+    image: chatapp/identity-service:local
+    environment:
+      <<: *dotnet-env
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${IDENTITY_DB_NAME:-identity_db};Username=${POSTGRES_USER:-chatapp};Password=${POSTGRES_PASSWORD:-chatapp_dev_password};Pooling=true;Minimum Pool Size=5;Maximum Pool Size=100;Timeout=15;Command Timeout=30
+      JwtSettings__SecretKey: ${JWT_SECRET_KEY:-ChangeThisToAtLeast32CharactersForProduction}
+      JwtSettings__Issuer: ${JWT_ISSUER:-ChatApp}
+      JwtSettings__Audience: ${JWT_AUDIENCE:-ChatApp.Client}
+      JwtSettings__ExpiryMinutes: ${JWT_EXPIRY_MINUTES:-60}
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__VirtualHost: ${RABBITMQ_DEFAULT_VHOST:-/}
+      RabbitMQ__Username: ${RABBITMQ_DEFAULT_USER:-chatapp}
+      RabbitMQ__Password: ${RABBITMQ_DEFAULT_PASS:-chatapp_dev_password}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - identity_logs:/app/Logs
+    networks:
+      - backend
+
+  user-service:
+    <<: *service-defaults
+    build:
+      context: ./ChatApp.Backend
+      dockerfile: Services/UserService/UserService.API/Dockerfile
+      args:
+        BUILD_CONFIGURATION: Release
+    image: chatapp/user-service:local
+    environment:
+      <<: *dotnet-env
+      Kestrel__Endpoints__HttpWebApi__Url: http://0.0.0.0:8080
+      Kestrel__Endpoints__HttpWebApi__Protocols: Http1
+      Kestrel__Endpoints__HttpsGrpc__Url: http://0.0.0.0:8081
+      Kestrel__Endpoints__HttpsGrpc__Protocols: Http2
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${USER_DB_NAME:-user_db};Username=${POSTGRES_USER:-chatapp};Password=${POSTGRES_PASSWORD:-chatapp_dev_password};Pooling=true;Minimum Pool Size=5;Maximum Pool Size=100;Timeout=15;Command Timeout=30
+      JwtSettings__SecretKey: ${JWT_SECRET_KEY:-ChangeThisToAtLeast32CharactersForProduction}
+      JwtSettings__Issuer: ${JWT_ISSUER:-ChatApp}
+      JwtSettings__Audience: ${JWT_AUDIENCE:-ChatApp.Client}
+      JwtSettings__ExpiryMinutes: ${JWT_EXPIRY_MINUTES:-60}
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__VirtualHost: ${RABBITMQ_DEFAULT_VHOST:-/}
+      RabbitMQ__Username: ${RABBITMQ_DEFAULT_USER:-chatapp}
+      RabbitMQ__Password: ${RABBITMQ_DEFAULT_PASS:-chatapp_dev_password}
+      AzureStorage__ConnectionString: ${AZURE_STORAGE_CONNECTION_STRING:-DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;}
+      AzureStorage__PublicBlobEndpoint: ${AZURE_STORAGE_PUBLIC_BLOB_ENDPOINT:-http://localhost:10000}
+      AzureStorage__AvatarContainer: ${AZURE_AVATAR_CONTAINER:-avatars}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      azurite:
+        condition: service_started
+    expose:
+      - "8080"
+      - "8081"
+    volumes:
+      - user_logs:/app/Logs
+    networks:
+      - backend
+
+  chat-service:
+    <<: *service-defaults
+    build:
+      context: ./ChatApp.Backend
+      dockerfile: Services/ChatService/ChatService.API/Dockerfile
+      args:
+        BUILD_CONFIGURATION: Release
+    image: chatapp/chat-service:local
+    environment:
+      <<: *dotnet-env
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${CHAT_DB_NAME:-chat_db};Username=${POSTGRES_USER:-chatapp};Password=${POSTGRES_PASSWORD:-chatapp_dev_password};Pooling=true;Minimum Pool Size=5;Maximum Pool Size=100;Timeout=15;Command Timeout=30
+      ConnectionStrings__RedisConnection: redis:6379
+      MongoDbSettings__ConnectionString: mongodb://${MONGO_ROOT_USERNAME:-chatapp}:${MONGO_ROOT_PASSWORD:-chatapp_dev_password}@mongo:27017/${MONGO_CHAT_DB_NAME:-chat_messages}?authSource=admin
+      MongoDbSettings__DatabaseName: ${MONGO_CHAT_DB_NAME:-chat_messages}
+      MongoDbSettings__CollectionName: ${MONGO_CHAT_COLLECTION_NAME:-messages}
+      JwtSettings__SecretKey: ${JWT_SECRET_KEY:-ChangeThisToAtLeast32CharactersForProduction}
+      JwtSettings__Issuer: ${JWT_ISSUER:-ChatApp}
+      JwtSettings__Audience: ${JWT_AUDIENCE:-ChatApp.Client}
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__VirtualHost: ${RABBITMQ_DEFAULT_VHOST:-/}
+      RabbitMQ__Username: ${RABBITMQ_DEFAULT_USER:-chatapp}
+      RabbitMQ__Password: ${RABBITMQ_DEFAULT_PASS:-chatapp_dev_password}
+      GrpcUrls__UserService: http://user-service:8081
+      AzureStorage__ConnectionString: ${AZURE_STORAGE_CONNECTION_STRING:-DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;}
+      AzureStorage__PublicBlobEndpoint: ${AZURE_STORAGE_PUBLIC_BLOB_ENDPOINT:-http://localhost:10000}
+      AzureStorage__AvatarContainer: ${AZURE_AVATAR_CONTAINER:-avatars}
+      AzureStorage__ChatMediaContainer: ${AZURE_CHAT_MEDIA_CONTAINER:-chat-media}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+      azurite:
+        condition: service_started
+    expose:
+      - "8080"
+    volumes:
+      - chat_logs:/app/Logs
+    networks:
+      - backend
+
+  api-gateway:
+    <<: *service-defaults
+    build:
+      context: ./ChatApp.Backend
+      dockerfile: ApiGateway/Dockerfile
+      args:
+        BUILD_CONFIGURATION: Release
+    image: chatapp/api-gateway:local
+    environment:
+      <<: *dotnet-env
+      ASPNETCORE_URLS: http://+:8080
+      Cors__AllowedOrigins__0: ${FRONTEND_ORIGIN:-http://localhost:8088}
+      ReverseProxy__Clusters__identity-cluster__Destinations__identity-service__Address: http://identity-service:8080/
+      ReverseProxy__Clusters__user-cluster__Destinations__user-service__Address: http://user-service:8080/
+      ReverseProxy__Clusters__chat-cluster__Destinations__chat-service__Address: http://chat-service:8080/
+    depends_on:
+      identity-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+      chat-service:
+        condition: service_started
+    ports:
+      - "${GATEWAY_PORT:-5000}:8080"
+    volumes:
+      - gateway_logs:/app/Logs
+    networks:
+      - edge
+      - backend
+
+  frontend:
+    <<: *service-defaults
+    build:
+      context: ./chatapp-frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:5000/api}
+        VITE_SIGNALR_URL: ${VITE_SIGNALR_URL:-http://localhost:5000/chatHub}
+    image: chatapp/frontend:local
+    depends_on:
+      api-gateway:
+        condition: service_started
+    ports:
+      - "${FRONTEND_PORT:-8088}:8080"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -q -O /dev/null http://127.0.0.1:8080/healthz || exit 1",
+        ]
+      interval: 15s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+    networks:
+      - edge
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  mongo_data:
+  azurite_data:
+  identity_logs:
+  user_logs:
+  chat_logs:
+  gateway_logs:
+
+networks:
+  edge:
+    driver: bridge
+  backend:
+    driver: bridge

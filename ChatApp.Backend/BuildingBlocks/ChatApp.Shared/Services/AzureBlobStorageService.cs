@@ -8,11 +8,19 @@ namespace ChatApp.Shared.Services
     public class AzureBlobStorageService : IBlobStorageService
     {
         private readonly string _connectionString;
+        private readonly Uri? _publicBlobEndpoint;
 
         public AzureBlobStorageService(IConfiguration configuration)
         {
             _connectionString = configuration["AzureStorage:ConnectionString"]
                 ?? throw new ArgumentNullException("AzureStorage:ConnectionString is missing in appsettings.json");
+
+            var publicBlobEndpointRaw = configuration["AzureStorage:PublicBlobEndpoint"];
+            if (!string.IsNullOrWhiteSpace(publicBlobEndpointRaw)
+                && Uri.TryCreate(publicBlobEndpointRaw, UriKind.Absolute, out var publicBlobEndpoint))
+            {
+                _publicBlobEndpoint = publicBlobEndpoint;
+            }
         }
 
         public async Task<string> UploadFileAsync(Stream fileStream, string fileName, string contentType, string containerName)
@@ -35,7 +43,7 @@ namespace ChatApp.Shared.Services
             await blobClient.UploadAsync(fileStream, new BlobUploadOptions { HttpHeaders = blobHttpHeader });
 
             // 5. Trả về đường link URL của bức ảnh
-            return blobClient.Uri.ToString();
+            return BuildPublicBlobUrl(blobClient.Uri);
         }
 
         public async Task DeleteFileAsync(string fileUrl, string containerName)
@@ -59,6 +67,25 @@ namespace ChatApp.Shared.Services
             {
                 throw new Exception($"Failed to delete file from Blob Storage. URL: {fileUrl}");
             }
+        }
+
+        private string BuildPublicBlobUrl(Uri blobUri)
+        {
+            // BlobEndpoint trong connection string có thể là hostname nội bộ Docker (vd: azurite).
+            // PublicBlobEndpoint cho phép đổi host/port để browser bên ngoài container truy cập được.
+            if (_publicBlobEndpoint is null)
+            {
+                return blobUri.ToString();
+            }
+
+            var publicUriBuilder = new UriBuilder(blobUri)
+            {
+                Scheme = _publicBlobEndpoint.Scheme,
+                Host = _publicBlobEndpoint.Host,
+                Port = _publicBlobEndpoint.IsDefaultPort ? -1 : _publicBlobEndpoint.Port
+            };
+
+            return publicUriBuilder.Uri.ToString();
         }
     }
 }

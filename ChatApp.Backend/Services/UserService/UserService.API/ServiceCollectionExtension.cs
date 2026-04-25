@@ -76,6 +76,11 @@ namespace UserService.API
 
             builder.Services.AddAuthorization();
 
+            var rabbitHost = builder.Configuration["RabbitMQ:Host"] ?? "localhost";
+            var rabbitVirtualHost = builder.Configuration["RabbitMQ:VirtualHost"] ?? "/";
+            var rabbitUsername = builder.Configuration["RabbitMQ:Username"] ?? "guest";
+            var rabbitPassword = builder.Configuration["RabbitMQ:Password"] ?? "guest";
+
             // Setup MassTransit (RabbitMQ)
             builder.Services.AddMassTransit(x =>
             {
@@ -84,10 +89,10 @@ namespace UserService.API
 
                 x.UsingRabbitMq((context, cfg) =>
                 {
-                    cfg.Host("localhost", "/", h =>
+                    cfg.Host(rabbitHost, rabbitVirtualHost, h =>
                     {
-                        h.Username("guest");
-                        h.Password("guest");
+                        h.Username(rabbitUsername);
+                        h.Password(rabbitPassword);
                     });
 
                     cfg.ReceiveEndpoint("user-service-user-created", e =>
@@ -105,6 +110,7 @@ namespace UserService.API
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+            builder.Services.AddHealthChecks();
         }
     }
 }

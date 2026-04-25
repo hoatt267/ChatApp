@@ -66,12 +66,17 @@ namespace ChatService.API
             builder.Services.AddSignalR()
                 .AddStackExchangeRedis(redisConnectionString, options =>
                 {
-                    options.Configuration.ChannelPrefix = "ChatApp"; // Đặt tên prefix để không đụng hàng với app khác trong cùng Redis
+                    options.Configuration.ChannelPrefix = RedisChannel.Literal("ChatApp"); // Đặt tên prefix để không đụng hàng với app khác trong cùng Redis
                 });
             builder.Services.AddStackExchangeRedisCache(options =>
                 {
                     options.Configuration = redisConnectionString;
                 });
+
+            var rabbitHost = builder.Configuration["RabbitMQ:Host"] ?? "localhost";
+            var rabbitVirtualHost = builder.Configuration["RabbitMQ:VirtualHost"] ?? "/";
+            var rabbitUsername = builder.Configuration["RabbitMQ:Username"] ?? "guest";
+            var rabbitPassword = builder.Configuration["RabbitMQ:Password"] ?? "guest";
 
             //Register RabbitMQ - Consumer
             builder.Services.AddMassTransit(x =>
@@ -86,10 +91,10 @@ namespace ChatService.API
                     // 2. CẤU HÌNH KẾT NỐI RABBITMQ
                     x.UsingRabbitMq((context, cfg) =>
                     {
-                        cfg.Host("localhost", "/", h =>
+                        cfg.Host(rabbitHost, rabbitVirtualHost, h =>
                         {
-                            h.Username("guest");
-                            h.Password("guest");
+                            h.Username(rabbitUsername);
+                            h.Password(rabbitPassword);
                         });
 
                         cfg.ReceiveEndpoint("chat-service-user-created", e =>
@@ -199,6 +204,7 @@ namespace ChatService.API
             // Đăng ký Global Exception Handler
             builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
             builder.Services.AddProblemDetails();
+            builder.Services.AddHealthChecks();
         }
     }
 }
