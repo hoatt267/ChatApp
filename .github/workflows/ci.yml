@@ -1,0 +1,103 @@
+# Tên của Pipeline hiển thị trên giao diện GitHub Actions
+name: CI
+
+# ==========================================
+# 1. ĐIỀU KIỆN KÍCH HOẠT (TRIGGERS)
+# ==========================================
+on:
+  push:
+    branches:
+      - main
+    # Chỉ chạy CI khi có sự thay đổi ở Frontend, Backend hoặc chính file CI này.
+    # (Nếu chỉ sửa README.md thì CI sẽ bỏ qua để tiết kiệm tài nguyên)
+    paths:
+      - "chatapp-frontend/**"
+      - "ChatApp.Backend/**"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "chatapp-frontend/**"
+      - "ChatApp.Backend/**"
+      - ".github/workflows/ci.yml"
+
+# ==========================================
+# 2. PHÂN QUYỀN VÀ TỐI ƯU TÀI NGUYÊN
+# ==========================================
+permissions:
+  contents: read # Chỉ cấp quyền Đọc mã nguồn (Bảo mật: ngăn CI vô tình sửa code)
+
+concurrency:
+  # Gom nhóm các tiến trình theo tên Workflow và tên Nhánh (Branch)
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  # 🌟 Kỹ thuật đắt giá: Nếu đang chạy CI mà có commit mới push lên,
+  # tự động HỦY tiến trình cũ và chỉ chạy tiến trình mới nhất.
+  cancel-in-progress: true
+
+# ==========================================
+# 3. DANH SÁCH CÁC CÔNG VIỆC (CHẠY SONG SONG)
+# ==========================================
+jobs:
+  # ----------------------------------------
+  # JOB 1: BIÊN DỊCH FRONTEND
+  # ----------------------------------------
+  frontend:
+    name: Frontend Build
+    runs-on: ubuntu-latest # Thuê máy chủ Linux mới nhất của GitHub
+
+    defaults:
+      run:
+        working-directory: chatapp-frontend # Tự động cd vào thư mục Frontend trước khi chạy mọi lệnh
+
+    steps:
+      # Bước 1: Kéo (Clone) mã nguồn từ GitHub về máy chủ ảo
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Bước 2: Cài đặt môi trường Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          # Bật tính năng Cache NPM để các lần chạy sau cài node_modules siêu nhanh
+          cache: npm
+          cache-dependency-path: chatapp-frontend/package-lock.json
+
+      # Bước 3: Cài đặt thư viện (Dùng 'npm ci' thay vì 'npm install' để đảm bảo tính nhất quán trên môi trường CI)
+      - name: Install dependencies
+        run: npm ci
+
+      # Bước 4: Kiểm tra lỗi cú pháp, format code (Linting)
+      - name: Lint
+        run: npm run lint
+
+      # Bước 5: Build ra file tĩnh (HTML, CSS, JS) để đảm bảo code không bị lỗi compile
+      - name: Build
+        run: npm run build
+
+  # ----------------------------------------
+  # JOB 2: BIÊN DỊCH BACKEND (.NET)
+  # ----------------------------------------
+  backend:
+    name: Backend Build
+    runs-on: ubuntu-latest # Job này chạy trên một máy chủ Linux ảo khác (Song song với Frontend)
+
+    steps:
+      # Bước 1: Kéo (Clone) mã nguồn về
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Bước 2: Cài đặt SDK .NET 10.0
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # Bước 3: Tải về các Nuget Packages (Dependencies)
+      - name: Restore
+        run: dotnet restore ChatApp.Backend/ChatApp.Backend.slnx
+
+      # Bước 4: Biên dịch code (Cờ --no-restore giúp tiết kiệm thời gian vì đã làm ở Bước 3)
+      - name: Build
+        run: dotnet build ChatApp.Backend/ChatApp.Backend.slnx --configuration Release --no-restore
